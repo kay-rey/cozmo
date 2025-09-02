@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 from config import config
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -181,18 +182,61 @@ async def get_next_match() -> Optional[dict]:
         home_badge = next_match.get("strHomeTeamBadge", "")
         away_badge = next_match.get("strAwayTeamBadge", "")
 
-        # Format the date and time
+        # Format the date and time with Pacific timezone conversion
         formatted_date = "TBD"
-        if date_str and date_str != "TBD":
-            try:
-                # Parse date format YYYY-MM-DD
-                match_date = datetime.strptime(date_str, "%Y-%m-%d")
-                formatted_date = match_date.strftime("%A, %B %d, %Y")
-            except ValueError:
-                formatted_date = date_str
+        formatted_time = "TBD"
+        pacific_datetime = None
 
-        # Format time
-        formatted_time = time_str if time_str and time_str != "TBD" else "TBD"
+        # Convert both date and time to Pacific timezone
+        if date_str and date_str != "TBD" and time_str and time_str != "TBD":
+            try:
+                # Parse date format YYYY-MM-DD and time format HH:MM:SS
+                match_date = datetime.strptime(date_str, "%Y-%m-%d")
+                time_parts = time_str.split(":")
+
+                if len(time_parts) >= 2:
+                    hours = int(time_parts[0])
+                    minutes = int(time_parts[1])
+
+                    # Create UTC datetime object
+                    utc = pytz.UTC
+                    pacific = pytz.timezone("US/Pacific")
+
+                    # Combine date and time, assuming UTC
+                    match_datetime = utc.localize(
+                        datetime.combine(
+                            match_date.date(),
+                            datetime.min.time().replace(hour=hours, minute=minutes),
+                        )
+                    )
+
+                    # Convert to Pacific time
+                    pacific_datetime = match_datetime.astimezone(pacific)
+
+                    # Format both date and time in Pacific timezone
+                    formatted_date = pacific_datetime.strftime("%A, %B %d, %Y")
+                    formatted_time = pacific_datetime.strftime("%I:%M %p PT")
+
+            except (ValueError, IndexError):
+                # Fallback to original formatting if conversion fails
+                if date_str and date_str != "TBD":
+                    try:
+                        match_date = datetime.strptime(date_str, "%Y-%m-%d")
+                        formatted_date = match_date.strftime("%A, %B %d, %Y")
+                    except ValueError:
+                        formatted_date = date_str
+                formatted_time = time_str if time_str else "TBD"
+        else:
+            # Handle cases where date or time is missing
+            if date_str and date_str != "TBD":
+                try:
+                    match_date = datetime.strptime(date_str, "%Y-%m-%d")
+                    formatted_date = match_date.strftime("%A, %B %d, %Y")
+                except ValueError:
+                    formatted_date = date_str
+
+            if time_str and time_str != "TBD":
+                formatted_time = time_str
 
         # Determine if LA Galaxy is home or away
         is_home = home_team.lower() == "la galaxy" or "galaxy" in home_team.lower()
@@ -235,104 +279,220 @@ async def get_next_match() -> Optional[dict]:
         raise SportsAPIError(f"Failed to process match data: {e}")
 
 
-async def get_standings() -> str:
+async def get_standings() -> dict:
     """
-    Fetch current MLS standings by getting all teams from recent events.
-
-    Since the league table API doesn't return complete MLS data,
-    we'll get team information from recent season events.
+    Fetch current MLS standings organized by Eastern and Western conferences.
 
     Returns:
-        Formatted string with MLS teams list
+        Dictionary with conference standings data for creating Discord embeds
 
     Raises:
         SportsAPIError: If API request fails or data unavailable
     """
     try:
-        # Get current season events to find all MLS teams
+        # Try to get actual league table first
         current_year = datetime.now().year
-        data = await sports_client._make_request(
-            f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year}"
+
+        # Attempt to get league table data
+        table_data = await sports_client._make_request(
+            f"lookuptable.php?l={sports_client.mls_league_id}&s={current_year}"
         )
 
-        events = data.get("events")
-        if not events:
-            # Try previous year if current year has no data
-            data = await sports_client._make_request(
-                f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year - 1}"
-            )
-            events = data.get("events", [])
+        # Check if we have actual standings data
+        table_entries = table_data.get("table")
+        if table_entries:
+            logger.info("Found actual MLS standings data")
+            return await _process_standings_table(table_entries)
 
-        if not events:
-            logger.warning("No MLS season data available")
-            raise SportsAPIError("MLS season data is currently unavailable")
-
-        # Extract unique teams from events
-        teams = set()
-        for event in events:
-            home_team = event.get("strHomeTeam", "")
-            away_team = event.get("strAwayTeam", "")
-            league = event.get("strLeague", "").lower()
-
-            # Check if this is an MLS event
-            if (
-                "major league soccer" in league
-                or "mls" in league
-                or "american major league soccer" in league
-            ):
-                if home_team:
-                    teams.add(home_team)
-                if away_team:
-                    teams.add(away_team)
-
-        if not teams:
-            logger.warning("No MLS teams found in events")
-            raise SportsAPIError("Unable to find MLS teams data")
-
-        # Sort teams alphabetically
-        sorted_teams = sorted(teams)
-
-        # Format as a clean list
-        standings_text = f"🏆 **MLS Teams ({len(sorted_teams)} teams)**\n\n"
-
-        # Split into two columns for better display
-        mid_point = len(sorted_teams) // 2
-        left_column = sorted_teams[:mid_point]
-        right_column = sorted_teams[mid_point:]
-
-        # Pad right column if needed
-        while len(right_column) < len(left_column):
-            right_column.append("")
-
-        standings_text += "```\n"
-        for i in range(len(left_column)):
-            left_team = left_column[i]
-            right_team = right_column[i] if i < len(right_column) else ""
-
-            # Highlight LA Galaxy
-            left_marker = "►" if "galaxy" in left_team.lower() else " "
-            right_marker = "►" if right_team and "galaxy" in right_team.lower() else " "
-
-            left_display = f"{left_marker}{left_team:<28}"
-            right_display = f"{right_marker}{right_team}" if right_team else ""
-
-            standings_text += f"{left_display} {right_display}\n"
-
-        standings_text += "```\n\n"
-        standings_text += "► = LA Galaxy\n"
-        standings_text += f"📊 Total MLS Teams: {len(sorted_teams)}\n"
-        standings_text += (
-            "💡 *Use `!playerstats [player name]` to get individual player statistics*"
-        )
-
-        logger.info(f"Successfully fetched {len(sorted_teams)} MLS teams")
-        return standings_text
+        # Fallback to team list if no standings available
+        logger.info("No standings table found, falling back to team list")
+        return await _get_team_list_fallback(current_year)
 
     except SportsAPIError:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error fetching MLS teams: {e}")
-        raise SportsAPIError(f"Failed to process MLS teams data: {e}")
+        logger.error(f"Unexpected error fetching MLS standings: {e}")
+        raise SportsAPIError(f"Failed to process MLS standings data: {e}")
+
+
+async def _process_standings_table(table_entries: list) -> dict:
+    """Process actual standings table data."""
+    # Define MLS conferences
+    western_conference = {
+        "Austin FC",
+        "Colorado Rapids",
+        "FC Dallas",
+        "Houston Dynamo",
+        "LA Galaxy",
+        "Los Angeles FC",
+        "Minnesota United",
+        "Portland Timbers",
+        "Real Salt Lake",
+        "San Jose Earthquakes",
+        "Seattle Sounders FC",
+        "Sporting Kansas City",
+        "Vancouver Whitecaps",
+        "St. Louis City SC",
+        "San Diego FC",
+    }
+
+    eastern_conference = {
+        "Atlanta United",
+        "CF Montréal",
+        "Charlotte FC",
+        "Chicago Fire",
+        "Columbus Crew",
+        "DC United",
+        "FC Cincinnati",
+        "Inter Miami",
+        "Nashville SC",
+        "New England Revolution",
+        "New York City FC",
+        "New York Red Bulls",
+        "Orlando City",
+        "Philadelphia Union",
+        "Toronto FC",
+    }
+
+    west_standings = []
+    east_standings = []
+
+    for entry in table_entries:
+        team_name = entry.get("strTeam", "")
+        normalized_team = team_name.replace("L.A. Galaxy", "LA Galaxy")
+
+        # Create team record
+        team_record = {
+            "name": team_name,
+            "played": entry.get("intPlayed", "0"),
+            "wins": entry.get("intWin", "0"),
+            "draws": entry.get("intDraw", "0"),
+            "losses": entry.get("intLoss", "0"),
+            "goals_for": entry.get("intGoalsFor", "0"),
+            "goals_against": entry.get("intGoalsAgainst", "0"),
+            "goal_difference": entry.get("intGoalDifference", "0"),
+            "points": entry.get("intPoints", "0"),
+            "position": entry.get("intRank", "0"),
+        }
+
+        # Assign to conference
+        if normalized_team in western_conference:
+            west_standings.append(team_record)
+        elif normalized_team in eastern_conference:
+            east_standings.append(team_record)
+
+    # Sort by points (descending), then by goal difference
+    west_standings.sort(
+        key=lambda x: (int(x["points"]), int(x["goal_difference"])), reverse=True
+    )
+    east_standings.sort(
+        key=lambda x: (int(x["points"]), int(x["goal_difference"])), reverse=True
+    )
+
+    return {
+        "has_standings": True,
+        "western_conference": west_standings,
+        "eastern_conference": east_standings,
+        "season": datetime.now().year,
+    }
+
+
+async def _get_team_list_fallback(current_year: int) -> dict:
+    """Fallback to team list when standings aren't available."""
+    # Get current season events to find all MLS teams
+    data = await sports_client._make_request(
+        f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year}"
+    )
+
+    events = data.get("events")
+    if not events:
+        # Try previous year if current year has no data
+        data = await sports_client._make_request(
+            f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year - 1}"
+        )
+        events = data.get("events", [])
+
+    if not events:
+        logger.warning("No MLS season data available")
+        raise SportsAPIError("MLS season data is currently unavailable")
+
+    # Extract unique teams from events
+    teams = set()
+    for event in events:
+        home_team = event.get("strHomeTeam", "")
+        away_team = event.get("strAwayTeam", "")
+        league = event.get("strLeague", "").lower()
+
+        # Check if this is an MLS event
+        if (
+            "major league soccer" in league
+            or "mls" in league
+            or "american major league soccer" in league
+        ):
+            if home_team:
+                teams.add(home_team)
+            if away_team:
+                teams.add(away_team)
+
+    if not teams:
+        logger.warning("No MLS teams found in events")
+        raise SportsAPIError("Unable to find MLS teams data")
+
+    # Define MLS conferences
+    western_conference = {
+        "Austin FC",
+        "Colorado Rapids",
+        "FC Dallas",
+        "Houston Dynamo",
+        "LA Galaxy",
+        "Los Angeles FC",
+        "Minnesota United",
+        "Portland Timbers",
+        "Real Salt Lake",
+        "San Jose Earthquakes",
+        "Seattle Sounders FC",
+        "Sporting Kansas City",
+        "Vancouver Whitecaps",
+        "St. Louis City SC",
+        "San Diego FC",
+    }
+
+    eastern_conference = {
+        "Atlanta United",
+        "CF Montréal",
+        "Charlotte FC",
+        "Chicago Fire",
+        "Columbus Crew",
+        "DC United",
+        "FC Cincinnati",
+        "Inter Miami",
+        "Nashville SC",
+        "New England Revolution",
+        "New York City FC",
+        "New York Red Bulls",
+        "Orlando City",
+        "Philadelphia Union",
+        "Toronto FC",
+    }
+
+    # Categorize teams by conference
+    west_teams = []
+    east_teams = []
+
+    for team in sorted(teams):
+        normalized_team = team.replace("L.A. Galaxy", "LA Galaxy")
+        if normalized_team in western_conference:
+            west_teams.append({"name": team})
+        elif normalized_team in eastern_conference:
+            east_teams.append({"name": team})
+
+    return {
+        "has_standings": False,
+        "western_conference": west_teams,
+        "eastern_conference": east_teams,
+        "season": current_year,
+        "total_teams": len(teams),
+    }
 
 
 async def get_player_stats(player_name: str) -> dict:

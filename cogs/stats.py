@@ -23,7 +23,7 @@ class StatsCog(commands.Cog):
     @commands.command(name="standings", aliases=["table", "league"])
     async def standings(self, ctx: commands.Context):
         """
-        Display current MLS standings.
+        Display current MLS standings organized by Eastern and Western conferences.
 
         Usage: !standings
         """
@@ -33,11 +33,105 @@ class StatsCog(commands.Cog):
         async with ctx.typing():
             try:
                 # Fetch standings data from Sports API
-                standings_info = await get_standings()
+                standings_data = await get_standings()
 
-                # Send the formatted standings information
-                await ctx.send(standings_info)
-                logger.info("Successfully sent MLS standings")
+                # Create main embed
+                embed = discord.Embed(
+                    title="🏆 MLS Standings",
+                    description=f"**{standings_data.get('season', 'Current')} Season**",
+                    color=discord.Color.blue(),
+                )
+
+                # Check if we have actual standings or just team lists
+                has_standings = standings_data.get("has_standings", False)
+
+                # Western Conference
+                west_teams = standings_data.get("western_conference", [])
+                if west_teams:
+                    if has_standings:
+                        # Format with actual standings data
+                        west_text = ""
+                        for i, team in enumerate(west_teams[:10], 1):  # Top 10
+                            name = team["name"]
+                            # Highlight LA Galaxy
+                            if "galaxy" in name.lower():
+                                name = f"**⭐ {name}**"
+
+                            points = team["points"]
+                            played = team["played"]
+                            gd = team["goal_difference"]
+                            gd_str = f"+{gd}" if int(gd) > 0 else str(gd)
+
+                            west_text += f"`{i:2}.` {name}\n"
+                            west_text += f"     {points}pts • {played}GP • {gd_str}GD\n"
+                    else:
+                        # Format as simple team list
+                        west_text = ""
+                        for i, team in enumerate(west_teams, 1):
+                            name = team["name"]
+                            if "galaxy" in name.lower():
+                                name = f"**⭐ {name}**"
+                            west_text += f"`{i:2}.` {name}\n"
+
+                    embed.add_field(
+                        name="🌅 Western Conference",
+                        value=west_text or "No teams found",
+                        inline=True,
+                    )
+
+                # Eastern Conference
+                east_teams = standings_data.get("eastern_conference", [])
+                if east_teams:
+                    if has_standings:
+                        # Format with actual standings data
+                        east_text = ""
+                        for i, team in enumerate(east_teams[:10], 1):  # Top 10
+                            name = team["name"]
+                            points = team["points"]
+                            played = team["played"]
+                            gd = team["goal_difference"]
+                            gd_str = f"+{gd}" if int(gd) > 0 else str(gd)
+
+                            east_text += f"`{i:2}.` {name}\n"
+                            east_text += f"     {points}pts • {played}GP • {gd_str}GD\n"
+                    else:
+                        # Format as simple team list
+                        east_text = ""
+                        for i, team in enumerate(east_teams, 1):
+                            name = team["name"]
+                            east_text += f"`{i:2}.` {name}\n"
+
+                    embed.add_field(
+                        name="🌇 Eastern Conference",
+                        value=east_text or "No teams found",
+                        inline=True,
+                    )
+
+                # Add empty field for spacing
+                embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+                # Add legend if we have standings data
+                if has_standings:
+                    embed.add_field(
+                        name="📊 Legend",
+                        value="**pts** = Points • **GP** = Games Played • **GD** = Goal Difference",
+                        inline=False,
+                    )
+                else:
+                    embed.add_field(
+                        name="ℹ️ Note",
+                        value="Detailed standings data not available. Showing team list by conference.",
+                        inline=False,
+                    )
+
+                # Set footer
+                embed.set_footer(
+                    text="⭐ LA Galaxy is in the Western Conference • Data from TheSportsDB",
+                    icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
+                )
+
+                await ctx.send(embed=embed)
+                logger.info("Successfully sent MLS standings embed")
 
             except SportsAPIError as e:
                 # Handle Sports API specific errors
