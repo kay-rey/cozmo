@@ -21,11 +21,15 @@ class StatsCog(commands.Cog):
         logger.info("StatsCog initialized")
 
     @commands.command(name="standings", aliases=["table", "league"])
-    async def standings(self, ctx: commands.Context):
+    async def standings(self, ctx: commands.Context, conference: str = None):
         """
         Display current MLS standings organized by Eastern and Western conferences.
 
-        Usage: !standings
+        Usage: !standings [west|east]
+        Examples:
+        - !standings (shows both conferences)
+        - !standings west (shows only Western Conference where LA Galaxy plays)
+        - !standings east (shows only Eastern Conference)
         """
         logger.info(f"Standings command invoked by {ctx.author} in {ctx.guild}")
 
@@ -35,6 +39,21 @@ class StatsCog(commands.Cog):
                 # Fetch standings data from Sports API
                 standings_data = await get_standings()
 
+                # Get team data first
+                west_teams = standings_data.get("western_conference", [])
+                east_teams = standings_data.get("eastern_conference", [])
+                has_standings = standings_data.get("has_standings", False)
+
+                # Parse conference filter
+                show_west = True
+                show_east = True
+                if conference:
+                    conference = conference.lower()
+                    if conference in ["west", "western", "w"]:
+                        show_east = False
+                    elif conference in ["east", "eastern", "e"]:
+                        show_west = False
+
                 # Create main embed
                 embed = discord.Embed(
                     title="🏆 MLS Standings",
@@ -42,76 +61,98 @@ class StatsCog(commands.Cog):
                     color=discord.Color.blue(),
                 )
 
-                # Check if we have actual standings or just team lists
-                has_standings = standings_data.get("has_standings", False)
+                # Update title and description based on conference filter
+                if not show_east:
+                    embed.title = "🏆 MLS Western Conference Standings"
+                    embed.description = f"**{standings_data.get('season', 'Current')} Season** • LA Galaxy's Conference ⭐"
+                elif not show_west:
+                    embed.title = "🏆 MLS Eastern Conference Standings"
+                    embed.description = (
+                        f"**{standings_data.get('season', 'Current')} Season**"
+                    )
+
+                # Log the data for debugging
+                logger.info(f"Western Conference teams: {len(west_teams)}")
+                logger.info(f"Eastern Conference teams: {len(east_teams)}")
+                logger.info(f"Has standings data: {has_standings}")
+                logger.info(f"Show west: {show_west}, Show east: {show_east}")
+                logger.info(f"Raw standings data keys: {list(standings_data.keys())}")
+
+                # Log first few teams for debugging
+                if west_teams:
+                    logger.info(f"First west team: {west_teams[0]}")
+                if east_teams:
+                    logger.info(f"First east team: {east_teams[0]}")
+
+                # Debug: Show what we actually got
+                if not west_teams and not east_teams:
+                    debug_info = f"No team data found.\n"
+                    debug_info += f"Available keys: {list(standings_data.keys())}\n"
+                    debug_info += f"Season: {standings_data.get('season', 'Unknown')}\n"
+                    debug_info += (
+                        f"Total teams: {standings_data.get('total_teams', 'Unknown')}"
+                    )
+
+                    embed.add_field(
+                        name="🔍 Debug Info",
+                        value=debug_info,
+                        inline=False,
+                    )
 
                 # Western Conference
-                west_teams = standings_data.get("western_conference", [])
-                if west_teams:
-                    if has_standings:
-                        # Format with actual standings data
-                        west_text = ""
-                        for i, team in enumerate(west_teams[:10], 1):  # Top 10
-                            name = team["name"]
-                            # Highlight LA Galaxy
-                            if "galaxy" in name.lower():
-                                name = f"**⭐ {name}**"
-
-                            points = team["points"]
-                            played = team["played"]
-                            gd = team["goal_difference"]
-                            gd_str = f"+{gd}" if int(gd) > 0 else str(gd)
-
-                            west_text += f"`{i:2}.` {name}\n"
-                            west_text += f"     {points}pts • {played}GP • {gd_str}GD\n"
-                    else:
-                        # Format as simple team list
-                        west_text = ""
-                        for i, team in enumerate(west_teams, 1):
-                            name = team["name"]
-                            if "galaxy" in name.lower():
-                                name = f"**⭐ {name}**"
-                            west_text += f"`{i:2}.` {name}\n"
-
-                    embed.add_field(
-                        name="🌅 Western Conference",
-                        value=west_text or "No teams found",
-                        inline=True,
-                    )
+                if show_west:
+                    if west_teams:
+                        west_text = self._format_conference_standings(
+                            west_teams, has_standings, True
+                        )
+                        embed.add_field(
+                            name=f"🌅 Western Conference ({len(west_teams)} teams)",
+                            value=west_text or "No teams found",
+                            inline=show_east,  # Side by side if showing both
+                        )
+                    elif (
+                        not show_east
+                    ):  # Only show this message if we're only showing west
+                        embed.add_field(
+                            name="🌅 Western Conference",
+                            value="No Western Conference data available",
+                            inline=False,
+                        )
 
                 # Eastern Conference
-                east_teams = standings_data.get("eastern_conference", [])
-                if east_teams:
-                    if has_standings:
-                        # Format with actual standings data
-                        east_text = ""
-                        for i, team in enumerate(east_teams[:10], 1):  # Top 10
-                            name = team["name"]
-                            points = team["points"]
-                            played = team["played"]
-                            gd = team["goal_difference"]
-                            gd_str = f"+{gd}" if int(gd) > 0 else str(gd)
+                if show_east:
+                    if east_teams:
+                        east_text = self._format_conference_standings(
+                            east_teams, has_standings, False
+                        )
+                        embed.add_field(
+                            name=f"🌇 Eastern Conference ({len(east_teams)} teams)",
+                            value=east_text or "No teams found",
+                            inline=show_west,  # Side by side if showing both
+                        )
+                    elif (
+                        not show_west
+                    ):  # Only show this message if we're only showing east
+                        embed.add_field(
+                            name="🌇 Eastern Conference",
+                            value="No Eastern Conference data available",
+                            inline=False,
+                        )
 
-                            east_text += f"`{i:2}.` {name}\n"
-                            east_text += f"     {points}pts • {played}GP • {gd_str}GD\n"
-                    else:
-                        # Format as simple team list
-                        east_text = ""
-                        for i, team in enumerate(east_teams, 1):
-                            name = team["name"]
-                            east_text += f"`{i:2}.` {name}\n"
+                # Add spacing field if showing both conferences
+                if show_west and show_east:
+                    embed.add_field(name="\u200b", value="\u200b", inline=True)
 
+                # Add informational note
+                note = standings_data.get("note", "")
+                if note:
                     embed.add_field(
-                        name="🌇 Eastern Conference",
-                        value=east_text or "No teams found",
-                        inline=True,
+                        name="ℹ️ Note",
+                        value=note
+                        + "\n\nFor live standings, visit [MLS.com](https://www.mlssoccer.com/standings/)",
+                        inline=False,
                     )
-
-                # Add empty field for spacing
-                embed.add_field(name="\u200b", value="\u200b", inline=True)
-
-                # Add legend if we have standings data
-                if has_standings:
+                elif has_standings:
                     embed.add_field(
                         name="📊 Legend",
                         value="**pts** = Points • **GP** = Games Played • **GD** = Goal Difference",
@@ -120,7 +161,7 @@ class StatsCog(commands.Cog):
                 else:
                     embed.add_field(
                         name="ℹ️ Note",
-                        value="Detailed standings data not available. Showing team list by conference.",
+                        value="For live standings, visit [MLS.com](https://www.mlssoccer.com/standings/)",
                         inline=False,
                     )
 
@@ -157,6 +198,41 @@ class StatsCog(commands.Cog):
                     color=discord.Color.red(),
                 )
                 await ctx.send(embed=embed)
+
+    def _format_conference_standings(
+        self, teams: list, has_standings: bool, is_western: bool
+    ) -> str:
+        """Format conference standings for display."""
+        if not teams:
+            return "No teams found"
+
+        text = ""
+        for i, team in enumerate(teams, 1):
+            name = team["name"]
+
+            # Highlight LA Galaxy if in western conference
+            if is_western and "galaxy" in name.lower():
+                name = f"**⭐ {name}**"
+
+            if has_standings:
+                # Format with actual standings data
+                points = team["points"]
+                played = team["played"]
+                gd = team["goal_difference"]
+                gd_str = f"+{gd}" if int(gd) > 0 else str(gd)
+
+                text += f"`{i:2}.` {name}\n"
+                text += f"     {points}pts • {played}GP • {gd_str}GD\n"
+            else:
+                # Format as simple team list
+                text += f"`{i:2}.` {name}\n"
+
+            # Discord field value limit is 1024 characters
+            if len(text) > 900:
+                text += f"... and {len(teams) - i} more teams"
+                break
+
+        return text
 
     @commands.command(name="playerstats", aliases=["player", "stats"])
     async def player_stats(self, ctx: commands.Context, *, player_name: str = None):

@@ -281,41 +281,78 @@ async def get_next_match() -> Optional[dict]:
 
 async def get_standings() -> dict:
     """
-    Fetch current MLS standings organized by Eastern and Western conferences.
+    Provide MLS conference information since live standings aren't reliably available.
 
     Returns:
-        Dictionary with conference standings data for creating Discord embeds
-
-    Raises:
-        SportsAPIError: If API request fails or data unavailable
+        Dictionary with MLS conference information for creating Discord embeds
     """
     try:
-        # Try to get actual league table first
         current_year = datetime.now().year
 
-        # Attempt to get league table data
-        table_data = await sports_client._make_request(
-            f"lookuptable.php?l={sports_client.mls_league_id}&s={current_year}"
-        )
+        # Define current MLS conferences (2025 season)
+        western_conference = [
+            "Austin FC",
+            "Colorado Rapids",
+            "FC Dallas",
+            "Houston Dynamo FC",
+            "LA Galaxy",
+            "Los Angeles FC",
+            "Minnesota United FC",
+            "Portland Timbers",
+            "Real Salt Lake",
+            "San Jose Earthquakes",
+            "Seattle Sounders FC",
+            "Sporting Kansas City",
+            "Vancouver Whitecaps FC",
+            "St. Louis City SC",
+        ]
 
-        # Check if we have actual standings data
-        table_entries = table_data.get("table")
-        if table_entries:
-            logger.info("Found actual MLS standings data")
-            return await _process_standings_table(table_entries)
+        eastern_conference = [
+            "Atlanta United FC",
+            "CF Montréal",
+            "Charlotte FC",
+            "Chicago Fire FC",
+            "Columbus Crew",
+            "D.C. United",
+            "FC Cincinnati",
+            "Inter Miami CF",
+            "Nashville SC",
+            "New England Revolution",
+            "New York City FC",
+            "New York Red Bulls",
+            "Orlando City SC",
+            "Philadelphia Union",
+            "Toronto FC",
+        ]
 
-        # Fallback to team list if no standings available
-        logger.info("No standings table found, falling back to team list")
-        return await _get_team_list_fallback(current_year)
+        # Return conference information
+        return {
+            "has_standings": False,
+            "western_conference": [{"name": team} for team in western_conference],
+            "eastern_conference": [{"name": team} for team in eastern_conference],
+            "season": current_year,
+            "total_teams": len(western_conference) + len(eastern_conference),
+            "note": "Live standings data not available. Showing current MLS teams by conference.",
+        }
 
-    except SportsAPIError:
-        raise
     except Exception as e:
-        logger.error(f"Unexpected error fetching MLS standings: {e}")
-        raise SportsAPIError(f"Failed to process MLS standings data: {e}")
+        logger.error(f"Unexpected error in get_standings: {e}")
+        raise SportsAPIError(f"Failed to get MLS conference information: {e}")
 
 
-async def _process_standings_table(table_entries: list) -> dict:
+async def _try_get_standings_for_year(year: int) -> list:
+    """Try to get standings data for a specific year."""
+    try:
+        table_data = await sports_client._make_request(
+            f"lookuptable.php?l={sports_client.mls_league_id}&s={year}"
+        )
+        return table_data.get("table", [])
+    except Exception as e:
+        logger.warning(f"Failed to get standings for {year}: {e}")
+        return []
+
+
+async def _process_standings_table(table_entries: list, year: int = None) -> dict:
     """Process actual standings table data."""
     # Define MLS conferences
     western_conference = {
@@ -393,7 +430,7 @@ async def _process_standings_table(table_entries: list) -> dict:
         "has_standings": True,
         "western_conference": west_standings,
         "eastern_conference": east_standings,
-        "season": datetime.now().year,
+        "season": year or datetime.now().year,
     }
 
 
