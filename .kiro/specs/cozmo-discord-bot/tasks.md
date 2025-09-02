@@ -57,7 +57,7 @@
   - Add error handling for API failures and display appropriate user messages
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 6. Implement Stats Cog
+- [x] 6. Implement Stats Cog
 
   - Create StatsCog class with discord.py Cog structure
   - Implement !standings command that displays formatted MLS standings
