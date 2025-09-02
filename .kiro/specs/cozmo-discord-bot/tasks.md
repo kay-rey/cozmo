@@ -65,22 +65,22 @@
   - Add input validation and error handling for both commands
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 7. Create trivia data and infrastructure
-- [ ] 7.1 Create trivia questions data
+- [x] 7. Create trivia data and infrastructure
+- [x] 7.1 Create trivia questions data
 
   - Create trivia_questions.py with QUESTIONS list containing at least 10 LA Galaxy trivia questions
   - Structure each question with question text, 4 options, and correct answer index
   - Ensure questions cover various aspects of LA Galaxy history and current team
   - _Requirements: 5.1, 5.2_
 
-- [ ] 7.2 Implement Trivia Cog core functionality
+- [x] 7.2 Implement Trivia Cog core functionality
 
   - Create TriviaCog class with active games tracking dictionary
   - Implement !trivia command that checks for existing games and starts new ones
   - Add random question selection and Discord embed formatting
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 7.3 Implement trivia reaction handling
+- [x] 7.3 Implement trivia reaction handling
 
   - Add reaction emojis (🇦, 🇧, 🇨, 🇩) to trivia questions automatically
   - Implement on_reaction_add event listener for answer processing
