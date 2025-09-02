@@ -50,7 +50,7 @@
   - Parse RSS data and extract title, link, and publication information
   - _Requirements: 4.1, 4.4_
 
-- [ ] 5. Implement Matchday Cog
+- [x] 5. Implement Matchday Cog
 
   - Create MatchdayCog class with discord.py Cog structure
   - Implement !nextmatch command that calls Sports API and formats response
