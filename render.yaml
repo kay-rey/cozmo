@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cozmo-discord-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    plan: free
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: SPORTS_API_KEY
+        sync: false
+      - key: NEWS_CHANNEL_ID
+        sync: false
