@@ -48,7 +48,7 @@ class TriviaCog(commands.Cog):
             question_data = random.choice(QUESTIONS)
 
             # Validate question data structure
-            required_keys = ["question", "options", "answer"]
+            required_keys = ["question", "options", "correct_answer"]
             if not all(key in question_data for key in required_keys):
                 logger.error(f"Invalid question data structure: {question_data}")
                 raise ValueError("Invalid trivia question format")
@@ -83,7 +83,7 @@ class TriviaCog(commands.Cog):
             # Store the active game data
             self.active_games[channel_id] = {
                 "message_id": message.id,
-                "correct_answer": question_data["answer"],
+                "correct_answer": question_data["correct_answer"],
                 "question": question_data["question"],
                 "options": options,
             }

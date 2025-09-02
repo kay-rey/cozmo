@@ -23,7 +23,7 @@ class Config:
         try:
             self.DISCORD_TOKEN = self._get_required_env("DISCORD_TOKEN")
             self.SPORTS_API_KEY = self._get_required_env("SPORTS_API_KEY")
-            self.NEWS_CHANNEL_ID = self._get_required_env_int("NEWS_CHANNEL_ID")
+            self.NEWS_CHANNEL_ID = self._get_optional_env_int("NEWS_CHANNEL_ID")
 
             self.logger.info("Configuration loaded successfully")
             self._validate_config()
@@ -65,6 +65,24 @@ class Config:
                 f"Environment variable {key} must be a valid positive integer"
             )
 
+    def _get_optional_env_int(self, key: str) -> Optional[int]:
+        """Get optional integer environment variable, return None if missing."""
+        value = os.getenv(key)
+        if not value:
+            self.logger.info(f"Optional environment variable {key} not set")
+            return None
+        try:
+            int_value = int(value)
+            if int_value <= 0:
+                self.logger.warning(
+                    f"Environment variable {key} must be a positive integer, got: {value}"
+                )
+                return None
+            return int_value
+        except ValueError:
+            self.logger.warning(f"Invalid integer value for {key}: {value}")
+            return None
+
     def _validate_discord_token(self, token: str) -> bool:
         """Basic validation for Discord token format."""
         # Discord tokens are typically 59+ characters and contain base64-like characters
@@ -75,15 +93,21 @@ class Config:
 
     def _validate_config(self) -> None:
         """Validate the loaded configuration."""
-        validations = [
+        # Required validations
+        required_validations = [
             (self.DISCORD_TOKEN, "Discord token"),
             (self.SPORTS_API_KEY, "Sports API key"),
-            (self.NEWS_CHANNEL_ID, "News channel ID"),
         ]
 
-        for value, name in validations:
+        for value, name in required_validations:
             if not value:
                 raise ValueError(f"{name} is empty or invalid")
+
+        # Optional validations (just log warnings)
+        if self.NEWS_CHANNEL_ID is None:
+            self.logger.info(
+                "News channel ID not configured - news features will be disabled"
+            )
 
         self.logger.info("All configuration values validated successfully")
 

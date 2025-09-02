@@ -44,7 +44,7 @@ A comprehensive Discord bot for LA Galaxy fans, providing match information, tea
 3. **Verify setup:**
 
    ```bash
-   python3 verify_bot_setup.py
+   python3 tests/verify_bot_setup.py
    ```
 
 4. **Start the bot:**
@@ -52,29 +52,59 @@ A comprehensive Discord bot for LA Galaxy fans, providing match information, tea
    python3 main.py
    ```
 
-For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md).
+## Testing
 
-## Architecture
+Run the complete test suite:
 
-Built with a modular architecture using Discord.py Cogs:
+```bash
+python3 tests/run_all_tests.py
+```
 
-- **Main Bot** (`main.py`) - Entry point and bot lifecycle management
-- **Configuration** (`config.py`) - Environment variable management
-- **API Layer** (`api/`) - External service integrations
-  - Sports API for match data and statistics
-  - News API for RSS feed parsing
-- **Cogs** (`cogs/`) - Feature modules
-  - Matchday - Match information commands
-  - Stats - Team and player statistics
-  - News - News updates and automation
-  - Trivia - Interactive trivia games
+Individual test categories:
 
-## Requirements
+```bash
+python3 tests/test_code_structure.py    # Code structure validation
+python3 tests/test_bot_final.py         # Integration tests
+python3 tests/test_bot_startup.py       # Startup sequence tests
+python3 tests/test_bot_commands.py      # Command functionality tests
+```
 
-- Python 3.8+
-- Discord bot token
-- TheSportsDB API key
-- Discord server with appropriate permissions
+## Documentation
+
+- **[Setup Guide](docs/SETUP_GUIDE.md)** - Detailed installation and configuration instructions
+- **[Error Handling Summary](docs/ERROR_HANDLING_SUMMARY.md)** - Error handling implementation details
+
+## Project Structure
+
+```
+cozmo-discord-bot/
+├── main.py                    # Bot entry point
+├── config.py                  # Configuration management
+├── requirements.txt           # Python dependencies
+├── trivia_questions.py        # Trivia game data
+├── .env.template              # Environment variables template
+├── api/                       # External API integrations
+│   ├── __init__.py
+│   ├── sports_api.py          # TheSportsDB integration
+│   └── news_api.py            # RSS feed integration
+├── cogs/                      # Discord bot features (auto-loaded)
+│   ├── __init__.py
+│   ├── matchday.py            # Match information commands
+│   ├── stats.py               # Statistics commands
+│   ├── news.py                # News commands and automation
+│   └── trivia.py              # Trivia game functionality
+├── tests/                     # Comprehensive test suite
+│   ├── README.md              # Test documentation
+│   ├── run_all_tests.py       # Master test runner
+│   ├── verify_bot_setup.py    # Setup verification
+│   └── test_*.py              # Individual test files
+├── docs/                      # Documentation
+│   ├── index.md               # Documentation index
+│   ├── SETUP_GUIDE.md         # Detailed setup instructions
+│   └── ERROR_HANDLING_SUMMARY.md  # Error handling details
+├── data/                      # Runtime data storage
+└── .kiro/specs/               # Development specifications
+```
 
 ## Commands
 
@@ -85,6 +115,13 @@ Built with a modular architecture using Discord.py Cogs:
 | `!playerstats [name]` | Get player statistics         |
 | `!news`               | Get latest news article       |
 | `!trivia`             | Start trivia game             |
+
+## Requirements
+
+- Python 3.8+
+- Discord bot token
+- TheSportsDB API key
+- Discord server with appropriate permissions
 
 ## Contributing
 
