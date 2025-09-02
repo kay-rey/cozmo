@@ -7,7 +7,13 @@ import logging
 from discord.ext import commands
 import discord
 
-from api.sports_api import get_standings, get_player_stats, SportsAPIError
+from api.sports_api import (
+    get_standings,
+    get_player_stats,
+    get_team_roster,
+    get_match_lineup,
+    SportsAPIError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +28,46 @@ class StatsCog(commands.Cog):
 
     @commands.command(name="sync", hidden=True)
     @commands.is_owner()
-    async def sync_commands(self, ctx: commands.Context):
-        """Manually sync slash commands (owner only)."""
+    async def sync_commands(self, ctx: commands.Context, guild_id: int = None):
+        """Manually sync slash commands (owner only). Use guild_id for faster server-specific sync."""
         try:
-            synced = await self.bot.tree.sync()
-            await ctx.send(f"✅ Synced {len(synced)} slash commands")
-            logger.info(f"Manually synced {len(synced)} slash commands")
+            if guild_id:
+                guild = discord.Object(id=guild_id)
+                synced = await self.bot.tree.sync(guild=guild)
+                await ctx.send(
+                    f"✅ Synced {len(synced)} slash commands to guild {guild_id}"
+                )
+                logger.info(
+                    f"Manually synced {len(synced)} slash commands to guild {guild_id}"
+                )
+            else:
+                synced = await self.bot.tree.sync()
+                await ctx.send(f"✅ Synced {len(synced)} slash commands globally")
+                logger.info(f"Manually synced {len(synced)} slash commands globally")
         except Exception as e:
             await ctx.send(f"❌ Failed to sync commands: {e}")
             logger.error(f"Failed to manually sync commands: {e}")
+
+    @commands.command(name="listcommands", hidden=True)
+    @commands.is_owner()
+    async def list_commands(self, ctx: commands.Context):
+        """List all registered slash commands (owner only)."""
+        try:
+            commands_list = []
+            for command in self.bot.tree.get_commands():
+                commands_list.append(f"• /{command.name} - {command.description}")
+
+            if commands_list:
+                command_text = "\n".join(commands_list)
+                await ctx.send(
+                    f"**Registered Slash Commands ({len(commands_list)}):**\n```\n{command_text}\n```"
+                )
+            else:
+                await ctx.send("❌ No slash commands are currently registered")
+
+        except Exception as e:
+            await ctx.send(f"❌ Failed to list commands: {e}")
+            logger.error(f"Failed to list commands: {e}")
 
     @discord.app_commands.command(
         name="standings", description="Display MLS teams organized by conference"
@@ -420,6 +457,262 @@ class StatsCog(commands.Cog):
             embed = discord.Embed(
                 title="❌ Something Went Wrong",
                 description="An unexpected error occurred while fetching player statistics. The issue has been logged.",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed)
+
+    @discord.app_commands.command(
+        name="roster", description="Display team roster organized by position"
+    )
+    @discord.app_commands.describe(team_name="Name of the team (defaults to LA Galaxy)")
+    async def roster(
+        self, interaction: discord.Interaction, team_name: str = "LA Galaxy"
+    ):
+        logger.info(
+            f"Roster slash command invoked by {interaction.user} for team: {team_name}"
+        )
+
+        await interaction.response.defer()
+
+        try:
+            roster_data = await get_team_roster(team_name)
+
+            if roster_data.get("error", False):
+                embed = discord.Embed(
+                    title="❌ Team Not Found",
+                    description=roster_data.get("message", "Unknown error occurred"),
+                    color=discord.Color.orange(),
+                )
+                embed.add_field(
+                    name="💡 Tips:",
+                    value="• Try 'LA Galaxy' for the full team name\n• Check spelling\n• Use official team names",
+                    inline=False,
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # Create roster embed
+            embed = discord.Embed(
+                title=f"👥 {roster_data['team_name']} Roster",
+                description=f"**{roster_data['total_players']} Players**"
+                + (
+                    f" • Stadium: {roster_data['stadium']}"
+                    if roster_data["stadium"]
+                    else ""
+                ),
+                color=discord.Color.blue()
+                if "galaxy" in roster_data["team_name"].lower()
+                else discord.Color.green(),
+            )
+
+            # Set team badge if available
+            if roster_data.get("team_badge"):
+                embed.set_thumbnail(url=roster_data["team_badge"])
+
+            # Group players by position for better display
+            positions = roster_data.get("positions", {})
+
+            # Define position order and emojis
+            position_config = [
+                ("Goalkeeper", "🥅", 3),
+                ("Defender", "🛡️", 8),
+                ("Midfielder", "⚽", 8),
+                ("Forward", "🎯", 6),
+                ("Attacker", "🎯", 6),
+                ("Winger", "🏃", 4),
+            ]
+
+            players_added = 0
+            max_players = 25  # Discord embed limit consideration
+
+            for pos_name, emoji, limit in position_config:
+                # Find matching positions (case insensitive, partial match)
+                matching_players = []
+                for pos_key, players in positions.items():
+                    if pos_name.lower() in pos_key.lower():
+                        matching_players.extend(players[:limit])
+
+                if matching_players and players_added < max_players:
+                    player_text = ""
+                    for i, player in enumerate(matching_players[:limit]):
+                        if players_added >= max_players:
+                            break
+                        player_text += (
+                            f"**{player['name']}** ({player['nationality']})\n"
+                        )
+                        players_added += 1
+
+                    if player_text:
+                        embed.add_field(
+                            name=f"{emoji} {pos_name}s",
+                            value=player_text or "None listed",
+                            inline=True,
+                        )
+
+            # Add any remaining positions not covered above
+            remaining_positions = {
+                k: v
+                for k, v in positions.items()
+                if not any(pos.lower() in k.lower() for pos, _, _ in position_config)
+            }
+
+            for pos_name, players in remaining_positions.items():
+                if players_added >= max_players:
+                    break
+                if players:
+                    player_text = ""
+                    for player in players[:3]:  # Limit others to 3
+                        if players_added >= max_players:
+                            break
+                        player_text += (
+                            f"**{player['name']}** ({player['nationality']})\n"
+                        )
+                        players_added += 1
+
+                    if player_text:
+                        embed.add_field(
+                            name=f"👤 {pos_name}",
+                            value=player_text,
+                            inline=True,
+                        )
+
+            # Set footer
+            if "galaxy" in roster_data["team_name"].lower():
+                embed.set_footer(
+                    text="⭐ LA Galaxy Roster • Data from TheSportsDB",
+                    icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
+                )
+            else:
+                embed.set_footer(text="Data from TheSportsDB")
+
+            await interaction.followup.send(embed=embed)
+            logger.info(f"Successfully sent roster embed for: {team_name}")
+
+        except SportsAPIError as e:
+            logger.error(f"Sports API error in roster command: {e}")
+            embed = discord.Embed(
+                title="❌ Unable to Fetch Roster",
+                description="Sorry, I'm having trouble getting the team roster right now. Please try again in a few minutes.",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"Unexpected error in roster command: {e}")
+            embed = discord.Embed(
+                title="❌ Something Went Wrong",
+                description="An unexpected error occurred while fetching the roster. The issue has been logged.",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed)
+
+    @discord.app_commands.command(
+        name="lineup", description="Display match lineup for a team"
+    )
+    @discord.app_commands.describe(
+        match_id="Match ID (optional - uses next LA Galaxy match if not provided)"
+    )
+    async def lineup(self, interaction: discord.Interaction, match_id: str = None):
+        logger.info(
+            f"Lineup slash command invoked by {interaction.user} with match_id: {match_id}"
+        )
+
+        await interaction.response.defer()
+
+        try:
+            lineup_data = await get_match_lineup(match_id)
+
+            if lineup_data.get("error", False):
+                embed = discord.Embed(
+                    title="❌ Lineup Not Available",
+                    description=lineup_data.get("message", "Unknown error occurred"),
+                    color=discord.Color.orange(),
+                )
+
+                embed.add_field(
+                    name="💡 Note",
+                    value="Lineup data is typically released closer to match time. Try the roster command to see all team players.",
+                    inline=False,
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # Create lineup embed
+            embed = discord.Embed(
+                title=f"📋 Match Lineup",
+                description=f"**{lineup_data['home_team']}** vs **{lineup_data['away_team']}**\n"
+                f"📅 {lineup_data['match_date']} • 🕐 {lineup_data['match_time']}",
+                color=discord.Color.blue(),
+            )
+
+            # Add home team lineup
+            home_lineup = lineup_data.get("home_lineup", [])
+            if home_lineup:
+                home_text = ""
+                for i, player in enumerate(home_lineup[:11], 1):  # Starting XI
+                    player_name = player.get("strPlayer", "Unknown")
+                    position = player.get("strPosition", "")
+                    home_text += (
+                        f"{i}. **{player_name}**"
+                        + (f" ({position})" if position else "")
+                        + "\n"
+                    )
+
+                embed.add_field(
+                    name=f"🏠 {lineup_data['home_team']} Starting XI",
+                    value=home_text or "Lineup not available",
+                    inline=True,
+                )
+
+            # Add away team lineup
+            away_lineup = lineup_data.get("away_lineup", [])
+            if away_lineup:
+                away_text = ""
+                for i, player in enumerate(away_lineup[:11], 1):  # Starting XI
+                    player_name = player.get("strPlayer", "Unknown")
+                    position = player.get("strPosition", "")
+                    away_text += (
+                        f"{i}. **{player_name}**"
+                        + (f" ({position})" if position else "")
+                        + "\n"
+                    )
+
+                embed.add_field(
+                    name=f"✈️ {lineup_data['away_team']} Starting XI",
+                    value=away_text or "Lineup not available",
+                    inline=True,
+                )
+
+            # Add venue info
+            if lineup_data.get("venue"):
+                embed.add_field(
+                    name="🏟️ Venue",
+                    value=lineup_data["venue"],
+                    inline=False,
+                )
+
+            # Set footer
+            embed.set_footer(text="Data from TheSportsDB")
+
+            await interaction.followup.send(embed=embed)
+            logger.info(
+                f"Successfully sent lineup embed for match: {match_id or 'next LA Galaxy match'}"
+            )
+
+        except SportsAPIError as e:
+            logger.error(f"Sports API error in lineup command: {e}")
+            embed = discord.Embed(
+                title="❌ Unable to Fetch Lineup",
+                description="Sorry, I'm having trouble getting the match lineup right now. Please try again in a few minutes.",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"Unexpected error in lineup command: {e}")
+            embed = discord.Embed(
+                title="❌ Something Went Wrong",
+                description="An unexpected error occurred while fetching the lineup. The issue has been logged.",
                 color=discord.Color.red(),
             )
             await interaction.followup.send(embed=embed)

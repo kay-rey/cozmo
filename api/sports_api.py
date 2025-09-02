@@ -340,6 +340,155 @@ async def get_standings() -> dict:
         raise SportsAPIError(f"Failed to get MLS conference information: {e}")
 
 
+async def get_team_roster(team_name: str = "LA Galaxy") -> dict:
+    """
+    Fetch team roster/squad information.
+
+    Args:
+        team_name: Name of the team to get roster for
+
+    Returns:
+        Dictionary with roster data for creating Discord embeds
+
+    Raises:
+        SportsAPIError: If API request fails
+    """
+    try:
+        # Search for the team first to get team ID
+        team_data = await sports_client._make_request(f"searchteams.php?t={team_name}")
+
+        teams = team_data.get("teams")
+        if not teams:
+            logger.info(f"No team found with name: {team_name}")
+            return {
+                "error": True,
+                "message": f"Team '{team_name}' not found. Please check the spelling and try again.",
+            }
+
+        # Use the first team found
+        team = teams[0]
+        team_id = team.get("idTeam")
+
+        if not team_id:
+            return {
+                "error": True,
+                "message": "Unable to find team ID for roster lookup.",
+            }
+
+        # Get team roster/players
+        roster_data = await sports_client._make_request(
+            f"lookup_all_players.php?id={team_id}"
+        )
+
+        players = roster_data.get("player", [])
+
+        # Process player data
+        roster_players = []
+        for player in players:
+            player_info = {
+                "name": player.get("strPlayer", "Unknown"),
+                "position": player.get("strPosition", "Unknown"),
+                "nationality": player.get("strNationality", "Unknown"),
+                "birth_date": player.get("dateBorn", ""),
+                "description": player.get("strDescriptionEN", ""),
+                "thumb_image": player.get("strThumb", ""),
+                "cutout_image": player.get("strCutout", ""),
+                "status": player.get("strStatus", "Active"),
+            }
+            roster_players.append(player_info)
+
+        # Group players by position
+        positions = {}
+        for player in roster_players:
+            pos = player["position"]
+            if pos not in positions:
+                positions[pos] = []
+            positions[pos].append(player)
+
+        return {
+            "error": False,
+            "team_name": team.get("strTeam", team_name),
+            "team_badge": team.get("strTeamBadge", ""),
+            "team_banner": team.get("strTeamBanner", ""),
+            "founded": team.get("intFormedYear", ""),
+            "stadium": team.get("strStadium", ""),
+            "description": team.get("strDescriptionEN", ""),
+            "players": roster_players,
+            "positions": positions,
+            "total_players": len(roster_players),
+        }
+
+    except SportsAPIError:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching team roster: {e}")
+        raise SportsAPIError(f"Failed to process team roster data: {e}")
+
+
+async def get_match_lineup(match_id: str = None) -> dict:
+    """
+    Fetch lineup information for a specific match.
+
+    Args:
+        match_id: ID of the match to get lineup for
+
+    Returns:
+        Dictionary with lineup data for creating Discord embeds
+
+    Raises:
+        SportsAPIError: If API request fails
+    """
+    try:
+        if not match_id:
+            # Try to get the next LA Galaxy match ID
+            next_match = await get_next_match()
+            if not next_match or not next_match.get("event_id"):
+                return {
+                    "error": True,
+                    "message": "No upcoming match found to get lineup for.",
+                }
+            match_id = next_match["event_id"]
+
+        # Get match lineup data
+        lineup_data = await sports_client._make_request(
+            f"lookuplineup.php?id={match_id}"
+        )
+
+        # TheSportsDB doesn't always have lineup data, especially for future matches
+        home_lineup = lineup_data.get("lineup1", [])
+        away_lineup = lineup_data.get("lineup2", [])
+
+        if not home_lineup and not away_lineup:
+            return {
+                "error": True,
+                "message": "Lineup information not available for this match. Lineups are typically released closer to match time.",
+            }
+
+        # Get match details
+        match_data = await sports_client._make_request(f"lookupevent.php?id={match_id}")
+        match_info = (
+            match_data.get("events", [{}])[0] if match_data.get("events") else {}
+        )
+
+        return {
+            "error": False,
+            "match_id": match_id,
+            "home_team": match_info.get("strHomeTeam", "Unknown"),
+            "away_team": match_info.get("strAwayTeam", "Unknown"),
+            "match_date": match_info.get("dateEvent", "TBD"),
+            "match_time": match_info.get("strTime", "TBD"),
+            "home_lineup": home_lineup,
+            "away_lineup": away_lineup,
+            "venue": match_info.get("strVenue", "TBD"),
+        }
+
+    except SportsAPIError:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching match lineup: {e}")
+        raise SportsAPIError(f"Failed to process match lineup data: {e}")
+
+
 async def _try_get_standings_for_year(year: int) -> list:
     """Try to get standings data for a specific year."""
     try:
