@@ -14,29 +14,29 @@
   - Add startup message and on_ready event handler
   - _Requirements: 6.3, 7.3_
 
-- [ ] 3. Create Sports API integration layer
-- [ ] 3.1 Implement basic Sports API client
+- [x] 3. Create Sports API integration layer
+- [x] 3.1 Implement basic Sports API client
 
   - Create sports_api.py with HTTP client setup and error handling
   - Implement API key authentication and base URL configuration
   - Add rate limiting and retry logic for API calls
   - _Requirements: 7.4_
 
-- [ ] 3.2 Implement next match functionality
+- [x] 3.2 Implement next match functionality
 
   - Create get_next_match() function to fetch LA Galaxy upcoming matches
   - Parse and format match data including date, time, opponent, and venue
   - Handle cases where no upcoming matches are found
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3.3 Implement standings functionality
+- [x] 3.3 Implement standings functionality
 
   - Create get_standings() function using MLS league ID 4346
   - Format standings data as readable table in Discord code block format
   - Handle API errors and unavailable data scenarios
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 3.4 Implement player statistics functionality
+- [x] 3.4 Implement player statistics functionality
 
   - Create get_player_stats() function with player name search
   - Parse and format player data including position, goals, assists, and description
