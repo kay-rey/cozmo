@@ -20,6 +20,18 @@ class StatsCog(commands.Cog):
         self.bot = bot
         logger.info("StatsCog initialized")
 
+    @commands.command(name="sync", hidden=True)
+    @commands.is_owner()
+    async def sync_commands(self, ctx: commands.Context):
+        """Manually sync slash commands (owner only)."""
+        try:
+            synced = await self.bot.tree.sync()
+            await ctx.send(f"✅ Synced {len(synced)} slash commands")
+            logger.info(f"Manually synced {len(synced)} slash commands")
+        except Exception as e:
+            await ctx.send(f"❌ Failed to sync commands: {e}")
+            logger.error(f"Failed to manually sync commands: {e}")
+
     @discord.app_commands.command(
         name="standings", description="Display MLS teams organized by conference"
     )
