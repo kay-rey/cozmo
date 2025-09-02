@@ -43,7 +43,7 @@
   - Handle player not found scenarios with appropriate messaging
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 4. Create News API integration layer
+- [x] 4. Create News API integration layer
 
   - Implement news_api.py with RSS feed parsing using feedparser
   - Create get_latest_news() function to fetch from LA Galaxy RSS feed
