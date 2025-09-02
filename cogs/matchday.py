@@ -33,22 +33,93 @@ class MatchdayCog(commands.Cog):
         async with ctx.typing():
             try:
                 # Fetch next match data from Sports API
-                match_info = await get_next_match()
+                match_data = await get_next_match()
 
-                if match_info is None:
+                if match_data is None:
                     # No upcoming matches found
                     embed = discord.Embed(
                         title="🏆 LA Galaxy Schedule",
                         description="No upcoming matches are currently scheduled. Check back later for updates!",
                         color=discord.Color.blue(),
                     )
-                    embed.set_footer(text="Go Galaxy! ⭐")
+                    embed.set_footer(
+                        text="Go Galaxy! ⭐",
+                        icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
+                    )
                     await ctx.send(embed=embed)
                     logger.info("No upcoming matches found")
                 else:
-                    # Send the formatted match information
-                    await ctx.send(match_info)
-                    logger.info("Successfully sent next match information")
+                    # Create rich embed for match information
+                    embed = discord.Embed(
+                        title="🏆 Next LA Galaxy Match",
+                        description=f"**{match_data['competition']}**",
+                        color=discord.Color.gold(),
+                    )
+
+                    # Set main match info
+                    match_title = (
+                        f"LA Galaxy {match_data['match_type']} {match_data['opponent']}"
+                    )
+                    embed.add_field(
+                        name="⚽ Match",
+                        value=match_title,
+                        inline=False,
+                    )
+
+                    # Add date and time
+                    embed.add_field(
+                        name="📅 Date",
+                        value=match_data["date"],
+                        inline=True,
+                    )
+                    embed.add_field(
+                        name="🕐 Time",
+                        value=match_data["time"],
+                        inline=True,
+                    )
+                    embed.add_field(
+                        name="🏟️ Venue",
+                        value=match_data["venue"],
+                        inline=True,
+                    )
+
+                    # Add season/round info if available
+                    if match_data["season"] or match_data["round"]:
+                        extra_info = []
+                        if match_data["season"]:
+                            extra_info.append(f"Season: {match_data['season']}")
+                        if match_data["round"]:
+                            extra_info.append(f"Round: {match_data['round']}")
+
+                        embed.add_field(
+                            name="📊 Details",
+                            value=" • ".join(extra_info),
+                            inline=False,
+                        )
+
+                    # Set team badge as thumbnail if available
+                    if match_data["galaxy_badge"]:
+                        embed.set_thumbnail(url=match_data["galaxy_badge"])
+
+                    # Add home/away indicator
+                    location_emoji = "🏠" if match_data["is_home"] else "✈️"
+                    location_text = (
+                        "Home Game" if match_data["is_home"] else "Away Game"
+                    )
+                    embed.add_field(
+                        name=f"{location_emoji} Location",
+                        value=location_text,
+                        inline=True,
+                    )
+
+                    # Set footer
+                    embed.set_footer(
+                        text="Go Galaxy! ⭐ • Use !standings to see all MLS teams",
+                        icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
+                    )
+
+                    await ctx.send(embed=embed)
+                    logger.info("Successfully sent next match embed")
 
             except SportsAPIError as e:
                 # Handle Sports API specific errors

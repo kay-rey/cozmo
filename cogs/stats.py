@@ -119,11 +119,117 @@ class StatsCog(commands.Cog):
         async with ctx.typing():
             try:
                 # Fetch player stats from Sports API
-                player_info = await get_player_stats(player_name)
+                player_data = await get_player_stats(player_name)
 
-                # Send the formatted player information
-                await ctx.send(player_info)
-                logger.info(f"Successfully sent player stats for: {player_name}")
+                # Check if there was an error
+                if player_data.get("error", False):
+                    embed = discord.Embed(
+                        title="❌ Player Not Found",
+                        description=player_data.get(
+                            "message", "Unknown error occurred"
+                        ),
+                        color=discord.Color.orange(),
+                    )
+                    embed.add_field(
+                        name="💡 Search Tips:",
+                        value="• Try using just the last name\n• Check spelling\n• Try common nicknames",
+                        inline=False,
+                    )
+                    await ctx.send(embed=embed)
+                    return
+
+                # Create rich embed with player information
+                embed = discord.Embed(
+                    title=f"⚽ {player_data['name']}",
+                    color=discord.Color.blue()
+                    if player_data["is_galaxy_player"]
+                    else discord.Color.green(),
+                )
+
+                # Set player image if available
+                if player_data["cutout_image"]:
+                    embed.set_image(url=player_data["cutout_image"])
+                elif player_data["thumb_image"]:
+                    embed.set_thumbnail(url=player_data["thumb_image"])
+
+                # Add basic info fields
+                embed.add_field(
+                    name="🏟️ Team",
+                    value=player_data["team"],
+                    inline=True,
+                )
+                embed.add_field(
+                    name="🏃 Position",
+                    value=player_data["position"],
+                    inline=True,
+                )
+                embed.add_field(
+                    name="🌍 Nationality",
+                    value=player_data["nationality"],
+                    inline=True,
+                )
+
+                # Add birth info if available
+                if player_data["birth_date"] or player_data["age"]:
+                    birth_info = []
+                    if player_data["birth_date"]:
+                        birth_info.append(player_data["birth_date"])
+                    if player_data["age"]:
+                        birth_info.append(f"({player_data['age']})")
+                    if player_data["birth_location"]:
+                        birth_info.append(f"in {player_data['birth_location']}")
+
+                    embed.add_field(
+                        name="🎂 Born",
+                        value=" ".join(birth_info),
+                        inline=True,
+                    )
+
+                # Add stats if available
+                if player_data["goals"] != "N/A" or player_data["assists"] != "N/A":
+                    stats_value = []
+                    if player_data["goals"] != "N/A":
+                        stats_value.append(f"⚽ Goals: {player_data['goals']}")
+                    if player_data["assists"] != "N/A":
+                        stats_value.append(f"🎯 Assists: {player_data['assists']}")
+
+                    embed.add_field(
+                        name="📊 Season Stats",
+                        value="\n".join(stats_value)
+                        if stats_value
+                        else "No stats available",
+                        inline=True,
+                    )
+
+                # Add status
+                embed.add_field(
+                    name="📋 Status",
+                    value=player_data["status"],
+                    inline=True,
+                )
+
+                # Add description if available
+                if (
+                    player_data["description"]
+                    and player_data["description"] != "No description available"
+                ):
+                    embed.add_field(
+                        name="📝 About",
+                        value=player_data["description"],
+                        inline=False,
+                    )
+
+                # Add footer with Galaxy indicator
+                if player_data["is_galaxy_player"]:
+                    embed.set_footer(
+                        text="⭐ LA Galaxy Player",
+                        icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
+                    )
+                else:
+                    embed.set_footer(text="ℹ️ Not currently with LA Galaxy")
+
+                await ctx.send(embed=embed)
+                logger.info(f"Successfully sent player stats embed for: {player_name}")
 
             except SportsAPIError as e:
                 # Handle Sports API specific errors

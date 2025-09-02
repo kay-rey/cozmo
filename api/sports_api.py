@@ -140,12 +140,12 @@ class SportsAPIClient:
 sports_client = SportsAPIClient()
 
 
-async def get_next_match() -> Optional[str]:
+async def get_next_match() -> Optional[dict]:
     """
     Fetch the next LA Galaxy match information.
 
     Returns:
-        Formatted string with match details or None if no upcoming matches
+        Dictionary with match details or None if no upcoming matches
 
     Raises:
         SportsAPIError: If API request fails
@@ -172,6 +172,15 @@ async def get_next_match() -> Optional[str]:
         venue = next_match.get("strVenue", "TBD")
         competition = next_match.get("strLeague", "MLS")
 
+        # Get additional match details
+        event_id = next_match.get("idEvent", "")
+        season = next_match.get("strSeason", "")
+        round_info = next_match.get("intRound", "")
+
+        # Get team badges/logos if available
+        home_badge = next_match.get("strHomeTeamBadge", "")
+        away_badge = next_match.get("strAwayTeamBadge", "")
+
         # Format the date and time
         formatted_date = "TBD"
         if date_str and date_str != "TBD":
@@ -186,26 +195,38 @@ async def get_next_match() -> Optional[str]:
         formatted_time = time_str if time_str and time_str != "TBD" else "TBD"
 
         # Determine if LA Galaxy is home or away
-        is_home = home_team.lower() == "la galaxy"
+        is_home = home_team.lower() == "la galaxy" or "galaxy" in home_team.lower()
         opponent = away_team if is_home else home_team
         match_type = "vs" if is_home else "@"
 
-        # Format the response
-        match_info = f"""🏆 **Next LA Galaxy Match**
-        
-**{competition}**
-LA Galaxy {match_type} {opponent}
+        # Get the appropriate team badge
+        galaxy_badge = home_badge if is_home else away_badge
+        opponent_badge = away_badge if is_home else home_badge
 
-📅 **Date:** {formatted_date}
-🕐 **Time:** {formatted_time}
-🏟️ **Venue:** {venue}
-
-Go Galaxy! ⭐"""
+        # Return structured match data
+        match_data = {
+            "home_team": home_team,
+            "away_team": away_team,
+            "opponent": opponent,
+            "is_home": is_home,
+            "match_type": match_type,
+            "date": formatted_date,
+            "time": formatted_time,
+            "venue": venue,
+            "competition": competition,
+            "season": season,
+            "round": round_info,
+            "event_id": event_id,
+            "galaxy_badge": galaxy_badge,
+            "opponent_badge": opponent_badge,
+            "raw_date": date_str,
+            "raw_time": time_str,
+        }
 
         logger.info(
             f"Successfully fetched next match: LA Galaxy {match_type} {opponent}"
         )
-        return match_info
+        return match_data
 
     except SportsAPIError:
         raise
@@ -314,7 +335,7 @@ async def get_standings() -> str:
         raise SportsAPIError(f"Failed to process MLS teams data: {e}")
 
 
-async def get_player_stats(player_name: str) -> str:
+async def get_player_stats(player_name: str) -> dict:
     """
     Search for player statistics by name.
 
@@ -322,14 +343,17 @@ async def get_player_stats(player_name: str) -> str:
         player_name: Name of the player to search for
 
     Returns:
-        Formatted string with player statistics
+        Dictionary with player data for creating Discord embeds
 
     Raises:
         SportsAPIError: If API request fails
     """
     try:
         if not player_name or not player_name.strip():
-            return "❌ Please provide a player name to search for."
+            return {
+                "error": True,
+                "message": "Please provide a player name to search for.",
+            }
 
         # Search for player
         data = await sports_client._make_request(
@@ -339,7 +363,10 @@ async def get_player_stats(player_name: str) -> str:
         players = data.get("player")
         if not players:
             logger.info(f"No player found with name: {player_name}")
-            return f"❌ Player '{player_name}' not found. Please check the spelling and try again."
+            return {
+                "error": True,
+                "message": f"Player '{player_name}' not found. Please check the spelling and try again.",
+            }
 
         # Find LA Galaxy player or use first result
         galaxy_player = None
@@ -357,61 +384,77 @@ async def get_player_stats(player_name: str) -> str:
         position = selected_player.get("strPosition", "Unknown")
         team = selected_player.get("strTeam", "Unknown")
         nationality = selected_player.get("strNationality", "Unknown")
-        description = selected_player.get(
-            "strDescriptionEN", "No description available"
-        )
+        description = selected_player.get("strDescriptionEN", "")
 
-        # Extract statistics (these may not always be available)
+        # Extract images
+        cutout_image = selected_player.get("strCutout", "")
+        thumb_image = selected_player.get("strThumb", "")
+
+        # Extract statistics
         goals = selected_player.get("intSoccerGoals") or selected_player.get(
-            "strGoals", "N/A"
+            "strGoals", ""
         )
         assists = selected_player.get("intSoccerAssists") or selected_player.get(
-            "strAssists", "N/A"
+            "strAssists", ""
         )
 
-        # Format birth info if available
+        # Extract birth information
         birth_date = selected_player.get("dateBorn", "")
         birth_location = selected_player.get("strBirthLocation", "")
 
-        birth_info = ""
-        if birth_date or birth_location:
-            birth_parts = []
-            if birth_date:
-                try:
-                    # Parse and format birth date
-                    parsed_date = datetime.strptime(birth_date, "%Y-%m-%d")
-                    birth_parts.append(parsed_date.strftime("%B %d, %Y"))
-                except ValueError:
-                    birth_parts.append(birth_date)
-            if birth_location:
-                birth_parts.append(birth_location)
-            birth_info = f"\n🎂 **Born:** {' in '.join(birth_parts)}"
+        # Format birth date
+        formatted_birth_date = ""
+        if birth_date:
+            try:
+                parsed_date = datetime.strptime(birth_date, "%Y-%m-%d")
+                formatted_birth_date = parsed_date.strftime("%B %d, %Y")
+            except ValueError:
+                formatted_birth_date = birth_date
+
+        # Calculate age if birth date available
+        age = ""
+        if birth_date:
+            try:
+                birth_dt = datetime.strptime(birth_date, "%Y-%m-%d")
+                today = datetime.now()
+                age_years = (
+                    today.year
+                    - birth_dt.year
+                    - ((today.month, today.day) < (birth_dt.month, birth_dt.day))
+                )
+                age = f"{age_years} years old"
+            except ValueError:
+                pass
 
         # Truncate description if too long
-        if len(description) > 300:
-            description = description[:297] + "..."
+        if description and len(description) > 400:
+            description = description[:397] + "..."
 
-        # Format the response
-        player_info = f"""⚽ **Player Statistics**
+        # Determine if this is a Galaxy player
+        is_galaxy_player = galaxy_player is not None
 
-👤 **Name:** {name}
-🏃 **Position:** {position}
-🏟️ **Team:** {team}
-🌍 **Nationality:** {nationality}{birth_info}
+        # Return structured data
+        player_data = {
+            "error": False,
+            "name": name,
+            "position": position,
+            "team": team,
+            "nationality": nationality,
+            "description": description or "No description available",
+            "goals": goals or "N/A",
+            "assists": assists or "N/A",
+            "birth_date": formatted_birth_date,
+            "birth_location": birth_location,
+            "age": age,
+            "cutout_image": cutout_image,
+            "thumb_image": thumb_image,
+            "is_galaxy_player": is_galaxy_player,
+            "player_id": selected_player.get("idPlayer", ""),
+            "status": selected_player.get("strStatus", "Unknown"),
+        }
 
-📊 **Season Stats:**
-⚽ Goals: {goals}
-🎯 Assists: {assists}
-
-📝 **About:**
-{description}"""
-
-        # Add note if not a Galaxy player
-        if not galaxy_player and players:
-            player_info += "\n\n*Note: This player is not currently with LA Galaxy*"
-
-        logger.info(f"Successfully fetched player stats for: {name}")
-        return player_info
+        logger.info(f"Successfully fetched player data for: {name}")
+        return player_data
 
     except SportsAPIError:
         raise
