@@ -216,59 +216,102 @@ Go Galaxy! ⭐"""
 
 async def get_standings() -> str:
     """
-    Fetch current MLS standings.
+    Fetch current MLS standings by getting all teams from recent events.
+
+    Since the league table API doesn't return complete MLS data,
+    we'll get team information from recent season events.
 
     Returns:
-        Formatted string with MLS standings table
+        Formatted string with MLS teams list
 
     Raises:
         SportsAPIError: If API request fails or data unavailable
     """
     try:
-        # Fetch MLS league table
+        # Get current season events to find all MLS teams
+        current_year = datetime.now().year
         data = await sports_client._make_request(
-            f"lookuptable.php?l={sports_client.mls_league_id}"
+            f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year}"
         )
 
-        table = data.get("table")
-        if not table:
-            logger.warning("No standings data available")
-            raise SportsAPIError("MLS standings data is currently unavailable")
+        events = data.get("events")
+        if not events:
+            # Try previous year if current year has no data
+            data = await sports_client._make_request(
+                f"eventsseason.php?id={sports_client.mls_league_id}&s={current_year - 1}"
+            )
+            events = data.get("events", [])
 
-        # Sort by position
-        sorted_table = sorted(table, key=lambda x: int(x.get("intRank", 999)))
+        if not events:
+            logger.warning("No MLS season data available")
+            raise SportsAPIError("MLS season data is currently unavailable")
 
-        # Format as table
-        standings_text = "🏆 **MLS Standings**\n\n```\n"
-        standings_text += (
-            f"{'Pos':<3} {'Team':<25} {'GP':<3} {'W':<3} {'D':<3} {'L':<3} {'Pts':<4}\n"
-        )
-        standings_text += "-" * 65 + "\n"
+        # Extract unique teams from events
+        teams = set()
+        for event in events:
+            home_team = event.get("strHomeTeam", "")
+            away_team = event.get("strAwayTeam", "")
+            league = event.get("strLeague", "").lower()
 
-        for team in sorted_table:
-            pos = team.get("intRank", "?")
-            name = team.get("strTeam", "Unknown")[:24]  # Truncate long names
-            played = team.get("intPlayed", "0")
-            wins = team.get("intWin", "0")
-            draws = team.get("intDraw", "0")
-            losses = team.get("intLoss", "0")
-            points = team.get("intPoints", "0")
+            # Check if this is an MLS event
+            if (
+                "major league soccer" in league
+                or "mls" in league
+                or "american major league soccer" in league
+            ):
+                if home_team:
+                    teams.add(home_team)
+                if away_team:
+                    teams.add(away_team)
+
+        if not teams:
+            logger.warning("No MLS teams found in events")
+            raise SportsAPIError("Unable to find MLS teams data")
+
+        # Sort teams alphabetically
+        sorted_teams = sorted(teams)
+
+        # Format as a clean list
+        standings_text = f"🏆 **MLS Teams ({len(sorted_teams)} teams)**\n\n"
+
+        # Split into two columns for better display
+        mid_point = len(sorted_teams) // 2
+        left_column = sorted_teams[:mid_point]
+        right_column = sorted_teams[mid_point:]
+
+        # Pad right column if needed
+        while len(right_column) < len(left_column):
+            right_column.append("")
+
+        standings_text += "```\n"
+        for i in range(len(left_column)):
+            left_team = left_column[i]
+            right_team = right_column[i] if i < len(right_column) else ""
 
             # Highlight LA Galaxy
-            marker = "►" if "galaxy" in name.lower() else " "
+            left_marker = "►" if "galaxy" in left_team.lower() else " "
+            right_marker = "►" if right_team and "galaxy" in right_team.lower() else " "
 
-            standings_text += f"{marker}{pos:<2} {name:<25} {played:<3} {wins:<3} {draws:<3} {losses:<3} {points:<4}\n"
+            left_display = f"{left_marker}{left_team:<28}"
+            right_display = f"{right_marker}{right_team}" if right_team else ""
 
-        standings_text += "```\n\n⭐ = LA Galaxy"
+            standings_text += f"{left_display} {right_display}\n"
 
-        logger.info("Successfully fetched MLS standings")
+        standings_text += "```\n\n"
+        standings_text += "► = LA Galaxy\n"
+        standings_text += f"📊 Total MLS Teams: {len(sorted_teams)}\n"
+        standings_text += (
+            "💡 *Use `!playerstats [player name]` to get individual player statistics*"
+        )
+
+        logger.info(f"Successfully fetched {len(sorted_teams)} MLS teams")
         return standings_text
 
     except SportsAPIError:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error fetching standings: {e}")
-        raise SportsAPIError(f"Failed to process standings data: {e}")
+        logger.error(f"Unexpected error fetching MLS teams: {e}")
+        raise SportsAPIError(f"Failed to process MLS teams data: {e}")
 
 
 async def get_player_stats(player_name: str) -> str:

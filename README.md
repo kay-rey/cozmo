@@ -104,7 +104,6 @@ NEWS_CHANNEL_ID=your_news_channel_id_here
 ### API Keys
 
 - **TheSportsDB**: Free tier available at [thesportsdb.com](https://www.thesportsdb.com/api.php)
-- Test API key `"123"` works for development
 
 ## 🧪 Testing & Quality Assurance
 
