@@ -195,13 +195,23 @@ async def main():
             from api.sports_api import sports_client
             from api.news_api import news_client
 
+            logger.info("Closing API client sessions...")
             await sports_client.close()
             await news_client.close()
 
+            # Close bot connection
+            logger.info("Closing bot connection...")
             await bot.close()
+
+            # Wait a moment for cleanup
+            await asyncio.sleep(1)
+
             logger.info("Bot shutdown complete")
         except Exception as e:
             logger.error(f"Error during bot shutdown: {e}")
+        except KeyboardInterrupt:
+            logger.info("Force shutdown requested")
+            pass
 
 
 if __name__ == "__main__":
