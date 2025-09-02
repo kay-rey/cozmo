@@ -88,22 +88,22 @@
   - Clean up completed games from active_games tracking
   - _Requirements: 5.4, 5.5, 5.6, 5.7_
 
-- [ ] 8. Implement News Cog functionality
-- [ ] 8.1 Create news tracking infrastructure
+- [x] 8. Implement News Cog functionality
+- [x] 8.1 Create news tracking infrastructure
 
   - Create last_article.txt file for duplicate prevention
   - Implement file read/write functions for URL tracking
   - Add error handling for file access operations
   - _Requirements: 4.2, 4.3_
 
-- [ ] 8.2 Implement manual news command
+- [x] 8.2 Implement manual news command
 
   - Create NewsCog class with discord.py Cog structure
   - Implement !news command that fetches and displays latest article on demand
   - Format news output with title and link for Discord display
   - _Requirements: 4.4_
 
-- [ ] 8.3 Implement automated news checking
+- [x] 8.3 Implement automated news checking
 
   - Create background task using tasks.loop(minutes=20) decorator
   - Implement duplicate checking logic comparing with stored URL
