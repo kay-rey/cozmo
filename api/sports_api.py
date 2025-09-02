@@ -56,7 +56,7 @@ class SportsAPIClient:
         self.session: Optional[aiohttp.ClientSession] = None
 
         # LA Galaxy team ID in TheSportsDB
-        self.la_galaxy_team_id = "134920"
+        self.la_galaxy_team_id = "134153"
         # MLS league ID
         self.mls_league_id = "4346"
 
