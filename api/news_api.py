@@ -36,7 +36,11 @@ class NewsAPIClient:
     async def close(self):
         """Close the aiohttp session."""
         if self.session and not self.session.closed:
-            await self.session.close()
+            try:
+                await self.session.close()
+                logger.info("News API client session closed")
+            except Exception as e:
+                logger.error(f"Error closing news API session: {e}")
 
     async def _fetch_rss_content(self) -> str:
         """

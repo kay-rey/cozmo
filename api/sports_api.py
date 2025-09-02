@@ -70,7 +70,11 @@ class SportsAPIClient:
     async def close(self):
         """Close the aiohttp session."""
         if self.session and not self.session.closed:
-            await self.session.close()
+            try:
+                await self.session.close()
+                logger.info("Sports API client session closed")
+            except Exception as e:
+                logger.error(f"Error closing sports API session: {e}")
 
     async def _make_request(
         self, endpoint: str, params: Dict[str, Any] = None

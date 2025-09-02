@@ -38,6 +38,7 @@ class NewsCog(commands.Cog):
                 logger.info("Created last_article.txt file")
         except IOError as e:
             logger.error(f"Failed to initialize last article file: {e}")
+            raise RuntimeError(f"Cannot initialize news tracking file: {e}")
 
     def _read_last_article_url(self) -> Optional[str]:
         """
@@ -95,36 +96,76 @@ class NewsCog(commands.Cog):
 
         Usage: !news
         """
-        try:
-            # Fetch the latest news article
-            article = await get_latest_news()
+        logger.info(f"News command invoked by {ctx.author} in {ctx.guild}")
 
-            # Format the news output for Discord
-            title = article.get("title", "No title available")
-            link = article.get("link", "")
-            published = article.get("published", "Unknown date")
+        # Send typing indicator to show the bot is working
+        async with ctx.typing():
+            try:
+                # Fetch the latest news article
+                article = await get_latest_news()
 
-            # Create formatted message
-            if link:
-                message = f"**Latest LA Galaxy News:**\n\n**{title}**\n{link}\n\n*Published: {published}*"
-            else:
-                message = f"**Latest LA Galaxy News:**\n\n**{title}**\n\n*Published: {published}*"
+                # Validate article data
+                if not article:
+                    logger.warning("No article data returned from news API")
+                    embed = discord.Embed(
+                        title="❌ No News Available",
+                        description="No news articles are currently available. Please try again later.",
+                        color=discord.Color.orange(),
+                    )
+                    await ctx.send(embed=embed)
+                    return
 
-            # Send the message
-            await ctx.send(message)
-            logger.info(
-                f"News command executed successfully in channel {ctx.channel.id}"
-            )
+                # Format the news output for Discord
+                title = article.get("title", "No title available")
+                link = article.get("link", "")
+                published = article.get("published", "Unknown date")
+                summary = article.get("summary", "")
 
-        except NewsAPIError as e:
-            error_message = "Sorry, I couldn't fetch the latest news right now. Please try again later."
-            await ctx.send(error_message)
-            logger.error(f"News API error in news command: {e}")
+                # Create embed for better formatting
+                embed = discord.Embed(
+                    title="📰 Latest LA Galaxy News",
+                    color=0x00274C,  # LA Galaxy navy blue
+                )
 
-        except Exception as e:
-            error_message = "An unexpected error occurred while fetching news."
-            await ctx.send(error_message)
-            logger.error(f"Unexpected error in news command: {e}")
+                embed.add_field(name="Title", value=title, inline=False)
+
+                if link:
+                    embed.add_field(name="Link", value=link, inline=False)
+
+                if summary:
+                    embed.add_field(name="Summary", value=summary, inline=False)
+
+                embed.add_field(name="Published", value=published, inline=False)
+                embed.set_footer(text="Go Galaxy! ⭐")
+
+                # Send the message
+                await ctx.send(embed=embed)
+                logger.info(
+                    f"News command executed successfully in channel {ctx.channel.id}"
+                )
+
+            except NewsAPIError as e:
+                logger.error(f"News API error in news command: {e}")
+                embed = discord.Embed(
+                    title="❌ Unable to Fetch News",
+                    description="Sorry, I'm having trouble getting the latest news right now. Please try again in a few minutes.",
+                    color=discord.Color.red(),
+                )
+                embed.add_field(
+                    name="What you can do:",
+                    value="• Try the command again in a few minutes\n• Check the official LA Galaxy website for news",
+                    inline=False,
+                )
+                await ctx.send(embed=embed)
+
+            except Exception as e:
+                logger.error(f"Unexpected error in news command: {e}", exc_info=True)
+                embed = discord.Embed(
+                    title="❌ Something Went Wrong",
+                    description="An unexpected error occurred while fetching news. The issue has been logged.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
 
     @tasks.loop(minutes=20)
     async def check_for_news(self):
@@ -133,8 +174,15 @@ class NewsCog(commands.Cog):
         Posts new articles to the designated news channel if they haven't been posted before.
         """
         try:
+            logger.debug("Starting automated news check")
+
             # Fetch the latest news article
             article = await get_latest_news()
+
+            if not article:
+                logger.warning("No article data returned from automated news check")
+                return
+
             article_url = article.get("link", "")
 
             # Skip if no URL available
@@ -152,17 +200,49 @@ class NewsCog(commands.Cog):
             # Get the news channel
             news_channel = self.bot.get_channel(NEWS_CHANNEL_ID)
             if not news_channel:
-                logger.error(f"News channel with ID {NEWS_CHANNEL_ID} not found")
+                logger.error(
+                    f"News channel with ID {NEWS_CHANNEL_ID} not found or bot lacks access"
+                )
+                return
+
+            # Check bot permissions in the news channel
+            permissions = news_channel.permissions_for(news_channel.guild.me)
+            if not permissions.send_messages:
+                logger.error(
+                    f"Bot lacks permission to send messages in news channel {NEWS_CHANNEL_ID}"
+                )
                 return
 
             # Format the news message
             title = article.get("title", "No title available")
             published = article.get("published", "Unknown date")
+            summary = article.get("summary", "")
 
-            message = f"🚨 **New LA Galaxy News!** 🚨\n\n**{title}**\n{article_url}\n\n*Published: {published}*"
+            # Create embed for automated news
+            embed = discord.Embed(
+                title="🚨 New LA Galaxy News!",
+                color=0x00274C,  # LA Galaxy navy blue
+            )
+
+            embed.add_field(name="Title", value=title, inline=False)
+            embed.add_field(name="Link", value=article_url, inline=False)
+
+            if summary:
+                embed.add_field(name="Summary", value=summary, inline=False)
+
+            embed.add_field(name="Published", value=published, inline=False)
+            embed.set_footer(text="Automated news update • Go Galaxy! ⭐")
 
             # Post the news to the channel
-            await news_channel.send(message)
+            try:
+                await news_channel.send(embed=embed)
+                logger.info(f"Successfully posted automated news: {title}")
+            except discord.Forbidden:
+                logger.error("Missing permissions to post in news channel")
+                return
+            except discord.HTTPException as e:
+                logger.error(f"Failed to post news message: {e}")
+                return
 
             # Update the last article URL to prevent duplicates
             if self._write_last_article_url(article_url):
@@ -174,7 +254,9 @@ class NewsCog(commands.Cog):
             logger.error(f"News API error in automated check: {e}")
 
         except Exception as e:
-            logger.error(f"Unexpected error in automated news check: {e}")
+            logger.error(
+                f"Unexpected error in automated news check: {e}", exc_info=True
+            )
 
     @check_for_news.before_loop
     async def before_check_for_news(self):
@@ -190,7 +272,43 @@ class NewsCog(commands.Cog):
         """Stop the news checking task when the cog is unloaded."""
         self.check_for_news.cancel()
 
+    @news_command.error
+    async def news_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
+        """Error handler for the news command."""
+        logger.error(f"Command error in news: {error}")
+
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(
+                f"⏰ Please wait {error.retry_after:.1f} seconds before using the news command again."
+            )
+        else:
+            embed = discord.Embed(
+                title="❌ Command Error",
+                description="There was an error processing your news request. Please try again.",
+                color=discord.Color.red(),
+            )
+            await ctx.send(embed=embed)
+
+    async def cog_load(self):
+        """Start the news checking task when the cog is loaded."""
+        try:
+            self.check_for_news.start()
+            logger.info("Started automated news checking task")
+        except Exception as e:
+            logger.error(f"Failed to start news checking task: {e}")
+
+    async def cog_unload(self):
+        """Stop the news checking task when the cog is unloaded."""
+        try:
+            self.check_for_news.cancel()
+            logger.info("Stopped automated news checking task")
+        except Exception as e:
+            logger.error(f"Error stopping news checking task: {e}")
+
 
 async def setup(bot):
     """Setup function for loading the cog."""
     await bot.add_cog(NewsCog(bot))
+    logger.info("NewsCog added to bot")
