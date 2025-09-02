@@ -14,9 +14,11 @@
 
 ### 📊 **MLS Mastery**
 
-- **`!standings`** - See where the Galaxy stands in the MLS table
-- **`!playerstats [player]`** - Deep dive into your favorite player's performance
-- Clean, readable tables that make stats actually enjoyable
+- **`/standings`** - See MLS teams organized by conference with optional filtering
+- **`/playerstats [player]`** - Deep dive into your favorite player's performance
+- **`/roster [team]`** - View complete team rosters organized by position
+- **`/lineup [match_id]`** - Display match lineups and starting XI
+- Clean, readable embeds that make stats actually enjoyable
 
 ### 🧠 **Galaxy Trivia Challenge**
 
@@ -63,12 +65,22 @@ _Watch for "Cozmo is online and ready to cheer for the Galaxy!" - that's your gr
 
 ## 🎮 Command Arsenal
 
-| Command               | What It Does                           | Example                   |
-| --------------------- | -------------------------------------- | ------------------------- |
-| `!nextmatch`          | Shows LA Galaxy's next scheduled match | `!nextmatch`              |
-| `!standings`          | Current MLS standings table            | `!standings`              |
-| `!playerstats [name]` | Player statistics and info             | `!playerstats Chicharito` |
-| `!trivia`             | Start an interactive trivia game       | `!trivia`                 |
+### Slash Commands (Modern Discord Interface)
+
+| Command                   | What It Does                             | Example                               |
+| ------------------------- | ---------------------------------------- | ------------------------------------- |
+| `/standings [conference]` | MLS teams by conference (west/east/both) | `/standings conference:west`          |
+| `/playerstats [name]`     | Player statistics and detailed info      | `/playerstats player_name:Chicharito` |
+| `/roster [team]`          | Team roster organized by position        | `/roster team_name:Inter Miami CF`    |
+| `/lineup [match_id]`      | Match lineup and starting XI             | `/lineup match_id:12345`              |
+
+### Prefix Commands (Classic Style)
+
+| Command      | What It Does                           | Example      |
+| ------------ | -------------------------------------- | ------------ |
+| `!nextmatch` | Shows LA Galaxy's next scheduled match | `!nextmatch` |
+| `!trivia`    | Start an interactive trivia game       | `!trivia`    |
+| `!sync`      | Sync slash commands (owner only)       | `!sync`      |
 
 ## 🔧 Configuration Deep Dive
 
@@ -97,9 +109,11 @@ NEWS_CHANNEL_ID=your_news_channel_id_here
 4. Copy your bot token to `.env`
 5. Invite bot with these permissions:
    - Send Messages
+   - Use Slash Commands
    - Use External Emojis
    - Add Reactions
    - Read Message History
+   - Embed Links
 
 ### API Keys
 
@@ -188,19 +202,28 @@ python3 main.py
 
 ### Production Deployment
 
-- **Render**: `render.yaml` included for one-click deployment
-- **Docker**: Containerization-ready structure
+- **Render**: `render.yaml` included for one-click deployment (recommended)
 - **Heroku**: Works with `runtime.txt` and `requirements.txt`
+- **Railway**: Compatible with Python buildpack
+- **Docker**: Optional containerization support available
 
 ## 🎯 What's Next?
+
+### Recently Added Features ✨
+
+- 🆕 **Modern Slash Commands**: Native Discord slash command support for all stats features
+- 👥 **Team Rosters**: Complete team rosters organized by position with player nationalities
+- 📋 **Match Lineups**: Starting XI and substitute information for matches
+- 🏟️ **Conference Filtering**: Filter MLS standings by Western or Eastern conference
+- ⚡ **Guild-Specific Sync**: Faster slash command deployment for server admins
 
 ### Planned Features
 
 - 📰 **News System**: Re-enable automated news updates
 - 🏆 **Match Predictions**: AI-powered match outcome predictions
 - 📱 **Mobile Notifications**: Push notifications for important matches
-- 🎨 **Custom Embeds**: Rich, branded Discord embeds
 - 📈 **Analytics Dashboard**: Track bot usage and popular commands
+- 🎯 **Enhanced Match Data**: Live scores and match events
 
 ### Contributing
 
@@ -229,9 +252,11 @@ This project is open source - see [LICENSE](LICENSE) for details.
 ## 💫 Fun Facts About Cozmo
 
 - 🎯 **15+ Trivia Questions**: From Galaxy's founding year to current roster
-- ⚡ **Sub-second Response**: Optimized for lightning-fast Discord responses
+- ⚡ **Modern Slash Commands**: Native Discord interface with autocomplete
 - 🛡️ **99.9% Uptime**: Built to handle Discord's occasional hiccups
 - 🌟 **Galaxy Focused**: Every feature designed with LA Galaxy fans in mind
 - 🤖 **Smart Caching**: Reduces API calls while keeping data fresh
+- 👥 **Complete MLS Coverage**: All 29 MLS teams supported for rosters and stats
+- 📊 **Rich Embeds**: Beautiful, branded Discord embeds with team badges
 
 **Ready to bring the Galaxy to your Discord server? Let's get Cozmo running! ⭐**
