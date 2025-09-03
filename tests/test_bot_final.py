@@ -201,7 +201,7 @@ async def test_trivia_questions():
     print("\nTesting trivia questions...")
 
     try:
-        from trivia_questions import QUESTIONS
+        from data.trivia_questions import QUESTIONS
 
         assert isinstance(QUESTIONS, list), "QUESTIONS should be a list"
         assert len(QUESTIONS) > 0, "Should have at least one trivia question"

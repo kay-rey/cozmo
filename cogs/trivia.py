@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import logging
-from trivia_questions import QUESTIONS
+from data.trivia_questions import QUESTIONS
 
 logger = logging.getLogger(__name__)
 

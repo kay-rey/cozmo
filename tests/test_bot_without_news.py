@@ -118,7 +118,7 @@ def test_trivia_questions():
     print("\nTesting trivia questions...")
 
     try:
-        from trivia_questions import QUESTIONS
+        from data.trivia_questions import QUESTIONS
 
         if not QUESTIONS:
             print("✗ No trivia questions found")
