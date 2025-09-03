@@ -76,6 +76,32 @@ Validates:
 - Dependencies installation
 - Configuration setup
 
+#### Team ID Validation
+
+```bash
+python3 tests/test_team_ids.py
+```
+
+Validates:
+
+- All hardcoded MLS team IDs
+- Team name accuracy
+- Player count retrieval
+- API response validation
+
+#### Team ID Status Report
+
+```bash
+python3 tests/team_id_status_report.py
+```
+
+Generates:
+
+- Comprehensive status report of all team IDs
+- Statistics on working vs broken teams
+- Detailed issue identification
+- Team mapping health assessment
+
 ## Test Files
 
 | File                        | Purpose                                  |
@@ -89,6 +115,8 @@ Validates:
 | `test_bot_comprehensive.py` | Legacy comprehensive tests               |
 | `test_error_handling.py`    | Error handling validation                |
 | `verify_bot_setup.py`       | Setup verification utility               |
+| `test_team_ids.py`          | MLS team ID validation and testing       |
+| `team_id_status_report.py`  | Comprehensive team ID status reporting   |
 
 ## Test Features
 
