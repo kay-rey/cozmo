@@ -224,9 +224,10 @@ class StatsCog(commands.Cog):
                     inline=False,
                 )
 
-            # Set footer
+            # Set footer with accurate data source
+            data_source = standings_data.get("source", "TheSportsDB")
             embed.set_footer(
-                text="⭐ LA Galaxy is in the Western Conference • Data from TheSportsDB",
+                text=f"⭐ LA Galaxy is in the Western Conference • Data from {data_source}",
                 icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
             )
 
@@ -444,14 +445,17 @@ class StatsCog(commands.Cog):
                     inline=False,
                 )
 
-            # Add footer with Galaxy indicator
+            # Add footer with Galaxy indicator and data source
+            data_source = player_data.get("source", "TheSportsDB")
             if player_data["is_galaxy_player"]:
                 embed.set_footer(
-                    text="⭐ LA Galaxy Player",
+                    text=f"⭐ LA Galaxy Player • Data from {data_source}",
                     icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
                 )
             else:
-                embed.set_footer(text="ℹ️ Not currently with LA Galaxy")
+                embed.set_footer(
+                    text=f"ℹ️ Not currently with LA Galaxy • Data from {data_source}"
+                )
 
             await interaction.followup.send(embed=embed)
             logger.info(f"Successfully sent player stats embed for: {player_name}")
@@ -552,13 +556,7 @@ class StatsCog(commands.Cog):
             data_source = roster_data.get("source", "TheSportsDB")
             total_players = roster_data.get("total_players", 0)
 
-            if data_source == "ESPN":
-                embed.add_field(
-                    name="📊 Data Source",
-                    value="ESPN (Enhanced roster data)",
-                    inline=True,
-                )
-            elif total_players < 15:  # Most MLS teams have 25+ players
+            if total_players < 15:  # Most MLS teams have 25+ players
                 embed.add_field(
                     name="⚠️ Limited Data Available",
                     value="Partial roster shown. Trying multiple sources for complete data.",
@@ -632,14 +630,15 @@ class StatsCog(commands.Cog):
                             inline=True,
                         )
 
-            # Set footer
+            # Set footer with accurate data source
+            data_source = roster_data.get("source", "TheSportsDB")
             if "galaxy" in roster_data["team_name"].lower():
                 embed.set_footer(
-                    text="⭐ LA Galaxy Roster • Data from TheSportsDB",
+                    text=f"⭐ LA Galaxy Roster • Data from {data_source}",
                     icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
                 )
             else:
-                embed.set_footer(text="Data from TheSportsDB")
+                embed.set_footer(text=f"Data from {data_source}")
 
             await interaction.followup.send(embed=embed)
             logger.info(f"Successfully sent roster embed for: {team_name}")
@@ -762,8 +761,9 @@ class StatsCog(commands.Cog):
                     inline=False,
                 )
 
-            # Set footer
-            embed.set_footer(text="Data from TheSportsDB")
+            # Set footer with accurate data source
+            data_source = lineup_data.get("source", "TheSportsDB")
+            embed.set_footer(text=f"Data from {data_source}")
 
             await interaction.followup.send(embed=embed)
             logger.info(

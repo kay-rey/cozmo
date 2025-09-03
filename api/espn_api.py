@@ -236,7 +236,11 @@ class ESPNAPIClient:
 
     async def get_mls_standings(self) -> Dict[str, Any]:
         """ESPN MLS standings are not available - return error."""
-        return {"error": True, "message": "ESPN MLS standings not available"}
+        return {
+            "error": True,
+            "message": "ESPN MLS standings not available",
+            "source": "ESPN",
+        }
 
 
 # Global ESPN client instance

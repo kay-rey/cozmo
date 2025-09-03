@@ -265,6 +265,7 @@ async def get_next_match() -> Optional[dict]:
             "opponent_badge": opponent_badge,
             "raw_date": date_str,
             "raw_time": time_str,
+            "source": "TheSportsDB",
         }
 
         logger.info(
@@ -333,6 +334,7 @@ async def get_standings() -> dict:
             "season": current_year,
             "total_teams": len(western_conference) + len(eastern_conference),
             "note": "Live standings data not available. Showing current MLS teams by conference.",
+            "source": "TheSportsDB",
         }
 
     except Exception as e:
@@ -405,6 +407,7 @@ async def get_standings_hybrid() -> dict:
 
             if not espn_data.get("error", False):
                 logger.info("Successfully got standings from ESPN")
+                espn_data["source"] = "ESPN"
                 return espn_data
             else:
                 logger.warning(
@@ -565,6 +568,7 @@ async def get_match_lineup(match_id: str = None) -> dict:
             "home_lineup": home_lineup,
             "away_lineup": away_lineup,
             "venue": match_info.get("strVenue", "TBD"),
+            "source": "TheSportsDB",
         }
 
     except SportsAPIError:
@@ -882,6 +886,7 @@ async def get_player_stats(player_name: str) -> dict:
             "is_galaxy_player": is_galaxy_player,
             "player_id": selected_player.get("idPlayer", ""),
             "status": selected_player.get("strStatus", "Unknown"),
+            "source": "TheSportsDB",
         }
 
         logger.info(f"Successfully fetched player data for: {name}")

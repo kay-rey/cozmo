@@ -120,9 +120,10 @@ class MatchdayCog(commands.Cog):
                         inline=True,
                     )
 
-                    # Set footer
+                    # Set footer with data source
+                    data_source = match_data.get("source", "TheSportsDB")
                     embed.set_footer(
-                        text="Go Galaxy! ⭐ • Use !standings to see all MLS teams",
+                        text=f"Go Galaxy! ⭐ • Data from {data_source}",
                         icon_url="https://logos-world.net/wp-content/uploads/2020/06/LA-Galaxy-Logo.png",
                     )
 
