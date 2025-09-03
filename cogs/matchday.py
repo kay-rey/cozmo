@@ -21,19 +21,27 @@ class MatchdayCog(commands.Cog):
         logger.info("MatchdayCog initialized")
 
     @commands.command(name="nextmatch", aliases=["next", "match"])
+    @commands.cooldown(1, 3, commands.BucketType.user)  # 1 use per 3 seconds per user
     async def next_match(self, ctx: commands.Context):
         """
         Display information about LA Galaxy's next upcoming match.
 
         Usage: !nextmatch
         """
-        logger.info(f"Next match command invoked by {ctx.author} in {ctx.guild}")
+        logger.info(
+            f"Next match command invoked by {ctx.author} in {ctx.guild} - Command: {ctx.invoked_with}"
+        )
 
         # Send typing indicator to show the bot is working
         async with ctx.typing():
             try:
-                # Fetch next match data from Sports API
-                match_data = await get_next_match()
+                # Fetch next match data from Sports API with timeout protection
+                import asyncio
+
+                match_data = await asyncio.wait_for(
+                    get_next_match(),
+                    timeout=25.0,  # 25 seconds max
+                )
 
                 if match_data is None:
                     # No upcoming matches found
@@ -120,6 +128,15 @@ class MatchdayCog(commands.Cog):
 
                     await ctx.send(embed=embed)
                     logger.info("Successfully sent next match embed")
+
+            except asyncio.TimeoutError:
+                logger.error("Timeout error in next_match command")
+                embed = discord.Embed(
+                    title="⏰ Request Timeout",
+                    description="The match information request took too long. Please try again in a moment.",
+                    color=discord.Color.orange(),
+                )
+                await ctx.send(embed=embed)
 
             except SportsAPIError as e:
                 # Handle Sports API specific errors

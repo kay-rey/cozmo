@@ -95,8 +95,13 @@ class StatsCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            # Fetch standings data using hybrid approach
-            standings_data = await get_standings_hybrid()
+            # Fetch standings data using hybrid approach with timeout protection
+            import asyncio
+
+            standings_data = await asyncio.wait_for(
+                get_standings_hybrid(),
+                timeout=25.0,  # 25 seconds max
+            )
 
             # Get team data first
             west_teams = standings_data.get("western_conference", [])
@@ -228,6 +233,15 @@ class StatsCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             logger.info("Successfully sent MLS standings embed")
 
+        except asyncio.TimeoutError:
+            logger.error("Timeout error in standings command")
+            embed = discord.Embed(
+                title="⏰ Request Timeout",
+                description="The standings request took too long. Please try again in a moment.",
+                color=discord.Color.orange(),
+            )
+            await interaction.followup.send(embed=embed)
+
         except SportsAPIError as e:
             # Handle Sports API specific errors
             logger.error(f"Sports API error in standings command: {e}")
@@ -326,8 +340,13 @@ class StatsCog(commands.Cog):
             return
 
         try:
-            # Fetch player stats from Sports API
-            player_data = await get_player_stats(player_name)
+            # Fetch player stats from Sports API with timeout protection
+            import asyncio
+
+            player_data = await asyncio.wait_for(
+                get_player_stats(player_name),
+                timeout=25.0,  # 25 seconds max
+            )
 
             # Check if there was an error
             if player_data.get("error", False):
@@ -437,6 +456,17 @@ class StatsCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             logger.info(f"Successfully sent player stats embed for: {player_name}")
 
+        except asyncio.TimeoutError:
+            logger.error(
+                f"Timeout error in player_stats command for player: {player_name}"
+            )
+            embed = discord.Embed(
+                title="⏰ Request Timeout",
+                description="The player search took too long. Please try again in a moment.",
+                color=discord.Color.orange(),
+            )
+            await interaction.followup.send(embed=embed)
+
         except SportsAPIError as e:
             # Handle Sports API specific errors
             logger.error(f"Sports API error in player_stats command: {e}")
@@ -476,7 +506,13 @@ class StatsCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            roster_data = await get_team_roster_hybrid(team_name)
+            # Add timeout protection
+            import asyncio
+
+            roster_data = await asyncio.wait_for(
+                get_team_roster_hybrid(team_name),
+                timeout=25.0,  # 25 seconds max
+            )
 
             if roster_data.get("error", False):
                 embed = discord.Embed(
@@ -498,7 +534,7 @@ class StatsCog(commands.Cog):
                 description=f"**{roster_data['total_players']} Players**"
                 + (
                     f" • Stadium: {roster_data['stadium']}"
-                    if roster_data["stadium"]
+                    if roster_data.get("stadium")
                     else ""
                 ),
                 color=discord.Color.blue()
@@ -506,9 +542,11 @@ class StatsCog(commands.Cog):
                 else discord.Color.green(),
             )
 
-            # Set team badge if available
+            # Set team badge/logo if available
             if roster_data.get("team_badge"):
                 embed.set_thumbnail(url=roster_data["team_badge"])
+            elif roster_data.get("team_logo"):
+                embed.set_thumbnail(url=roster_data["team_logo"])
 
             # Add data source info and disclaimer if needed
             data_source = roster_data.get("source", "TheSportsDB")
@@ -606,6 +644,15 @@ class StatsCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             logger.info(f"Successfully sent roster embed for: {team_name}")
 
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout error in roster command for team: {team_name}")
+            embed = discord.Embed(
+                title="⏰ Request Timeout",
+                description="The roster request took too long. Please try again in a moment.",
+                color=discord.Color.orange(),
+            )
+            await interaction.followup.send(embed=embed)
+
         except SportsAPIError as e:
             logger.error(f"Sports API error in roster command: {e}")
             embed = discord.Embed(
@@ -638,7 +685,13 @@ class StatsCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            lineup_data = await get_match_lineup(match_id)
+            # Fetch lineup data with timeout protection
+            import asyncio
+
+            lineup_data = await asyncio.wait_for(
+                get_match_lineup(match_id),
+                timeout=25.0,  # 25 seconds max
+            )
 
             if lineup_data.get("error", False):
                 embed = discord.Embed(
@@ -716,6 +769,17 @@ class StatsCog(commands.Cog):
             logger.info(
                 f"Successfully sent lineup embed for match: {match_id or 'next LA Galaxy match'}"
             )
+
+        except asyncio.TimeoutError:
+            logger.error(
+                f"Timeout error in lineup command for match: {match_id or 'next LA Galaxy match'}"
+            )
+            embed = discord.Embed(
+                title="⏰ Request Timeout",
+                description="The lineup request took too long. Please try again in a moment.",
+                color=discord.Color.orange(),
+            )
+            await interaction.followup.send(embed=embed)
 
         except SportsAPIError as e:
             logger.error(f"Sports API error in lineup command: {e}")

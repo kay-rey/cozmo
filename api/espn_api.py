@@ -1,12 +1,10 @@
 """
-ESPN API integration for MLS data.
-Provides better roster and standings data to complement TheSportsDB.
+ESPN API integration for MLS data - Fixed version.
+Provides better roster data to complement TheSportsDB.
 """
 
-import asyncio
 import aiohttp
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from typing import Optional, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,48 +23,48 @@ class ESPNAPIClient:
         self.base_url = "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1"
         self.session: Optional[aiohttp.ClientSession] = None
 
-        # MLS team mapping for better searches
-        self.team_mapping = {
-            "la galaxy": "la-galaxy",
-            "lafc": "los-angeles-fc",
-            "los angeles fc": "los-angeles-fc",
-            "inter miami": "inter-miami-cf",
-            "inter miami cf": "inter-miami-cf",
-            "atlanta united": "atlanta-united-fc",
-            "atlanta united fc": "atlanta-united-fc",
-            "new york city fc": "new-york-city-fc",
-            "nycfc": "new-york-city-fc",
-            "new york red bulls": "new-york-red-bulls",
-            "seattle sounders": "seattle-sounders-fc",
-            "seattle sounders fc": "seattle-sounders-fc",
-            "portland timbers": "portland-timbers",
-            "sporting kansas city": "sporting-kansas-city",
-            "real salt lake": "real-salt-lake",
-            "colorado rapids": "colorado-rapids",
-            "minnesota united": "minnesota-united-fc",
-            "minnesota united fc": "minnesota-united-fc",
-            "houston dynamo": "houston-dynamo-fc",
-            "houston dynamo fc": "houston-dynamo-fc",
-            "fc dallas": "fc-dallas",
-            "austin fc": "austin-fc",
-            "san jose earthquakes": "san-jose-earthquakes",
-            "vancouver whitecaps": "vancouver-whitecaps-fc",
-            "vancouver whitecaps fc": "vancouver-whitecaps-fc",
-            "columbus crew": "columbus-crew",
-            "chicago fire": "chicago-fire-fc",
-            "chicago fire fc": "chicago-fire-fc",
-            "dc united": "dc-united",
-            "cf montreal": "cf-montreal",
-            "toronto fc": "toronto-fc",
-            "new england revolution": "new-england-revolution",
-            "philadelphia union": "philadelphia-union",
-            "orlando city": "orlando-city-sc",
-            "orlando city sc": "orlando-city-sc",
-            "nashville sc": "nashville-sc",
-            "charlotte fc": "charlotte-fc",
-            "fc cincinnati": "fc-cincinnati",
-            "st louis city sc": "st-louis-city-sc",
-            "st. louis city sc": "st-louis-city-sc",
+        # MLS team ID mapping (from ESPN API)
+        self.team_ids = {
+            "la galaxy": "187",
+            "lafc": "11002",
+            "los angeles fc": "11002",
+            "inter miami": "11001",
+            "inter miami cf": "11001",
+            "atlanta united": "18418",
+            "atlanta united fc": "18418",
+            "seattle sounders": "273",
+            "seattle sounders fc": "273",
+            "portland timbers": "18419",
+            "sporting kansas city": "18420",
+            "real salt lake": "18421",
+            "colorado rapids": "18422",
+            "fc dallas": "18423",
+            "houston dynamo": "18424",
+            "houston dynamo fc": "18424",
+            "san jose earthquakes": "18425",
+            "vancouver whitecaps": "18426",
+            "vancouver whitecaps fc": "18426",
+            "minnesota united": "18427",
+            "minnesota united fc": "18427",
+            "new york city fc": "18428",
+            "nycfc": "18428",
+            "orlando city": "18429",
+            "orlando city sc": "18429",
+            "new york red bulls": "18430",
+            "chicago fire": "18431",
+            "chicago fire fc": "18431",
+            "new england revolution": "18432",
+            "columbus crew": "18433",
+            "toronto fc": "18434",
+            "cf montreal": "18435",
+            "dc united": "18436",
+            "philadelphia union": "18437",
+            "nashville sc": "18438",
+            "austin fc": "18439",
+            "charlotte fc": "18440",
+            "fc cincinnati": "18441",
+            "st louis city sc": "18442",
+            "st. louis city sc": "18442",
         }
 
     async def _get_session(self) -> aiohttp.ClientSession:
@@ -91,19 +89,7 @@ class ESPNAPIClient:
     async def _make_request(
         self, endpoint: str, params: Dict[str, Any] = None
     ) -> Dict[str, Any]:
-        """
-        Make HTTP request to ESPN API.
-
-        Args:
-            endpoint: API endpoint path
-            params: Query parameters
-
-        Returns:
-            JSON response data
-
-        Raises:
-            ESPNAPIError: If request fails
-        """
+        """Make HTTP request to ESPN API."""
         if params is None:
             params = {}
 
@@ -126,171 +112,131 @@ class ESPNAPIClient:
             logger.error(f"ESPN API request failed: {e}")
             raise ESPNAPIError(f"Failed to fetch data from ESPN API: {e}")
 
-    def _normalize_team_name(self, team_name: str) -> str:
-        """Normalize team name for ESPN API lookup."""
-        normalized = team_name.lower().strip()
-        return self.team_mapping.get(normalized, normalized.replace(" ", "-"))
-
-    async def get_mls_standings(self) -> Dict[str, Any]:
-        """
-        Get current MLS standings from ESPN.
-
-        Returns:
-            Dictionary with standings data
-        """
+    async def find_team_id(self, team_name: str) -> Optional[str]:
+        """Find team ID by searching through teams."""
         try:
-            data = await self._make_request("standings")
+            # Check our known mappings first
+            normalized_name = team_name.lower().strip()
+            if normalized_name in self.team_ids:
+                return self.team_ids[normalized_name]
 
-            if not data.get("children"):
-                logger.warning("No standings data found in ESPN response")
-                return {"error": True, "message": "No standings data available"}
+            # Search through all teams
+            teams_data = await self._make_request("teams")
+            sports = teams_data.get("sports", [])
+            if not sports:
+                return None
 
-            western_teams = []
-            eastern_teams = []
+            leagues = sports[0].get("leagues", [])
+            if not leagues:
+                return None
 
-            # ESPN organizes by conferences
-            for conference in data["children"]:
-                conf_name = conference.get("name", "").lower()
-                standings = conference.get("standings", {}).get("entries", [])
+            teams = leagues[0].get("teams", [])
 
-                for entry in standings:
-                    team_data = entry.get("team", {})
-                    stats = entry.get("stats", [])
+            for team_entry in teams:
+                team_info = team_entry.get("team", {})
+                team_display = team_info.get("displayName", "").lower()
+                team_short = team_info.get("shortDisplayName", "").lower()
 
-                    # Extract team info
-                    team_info = {
-                        "name": team_data.get("displayName", "Unknown"),
-                        "abbreviation": team_data.get("abbreviation", ""),
-                        "logo": team_data.get("logo", ""),
-                        "position": entry.get("position", 0),
-                    }
+                if (
+                    normalized_name in team_display
+                    or team_name.lower() in team_display
+                    or normalized_name in team_short
+                ):
+                    return team_info.get("id")
 
-                    # Extract stats (points, wins, losses, etc.)
-                    for stat in stats:
-                        stat_name = stat.get("name", "").lower()
-                        if stat_name == "points":
-                            team_info["points"] = stat.get("value", 0)
-                        elif stat_name == "wins":
-                            team_info["wins"] = stat.get("value", 0)
-                        elif stat_name == "losses":
-                            team_info["losses"] = stat.get("value", 0)
-                        elif stat_name == "ties":
-                            team_info["draws"] = stat.get("value", 0)
-                        elif stat_name == "gamesplayed":
-                            team_info["played"] = stat.get("value", 0)
-                        elif stat_name == "goaldifferential":
-                            team_info["goal_difference"] = stat.get("value", 0)
-
-                    # Assign to conference
-                    if "west" in conf_name:
-                        western_teams.append(team_info)
-                    elif "east" in conf_name:
-                        eastern_teams.append(team_info)
-
-            return {
-                "error": False,
-                "has_standings": True,
-                "western_conference": western_teams,
-                "eastern_conference": eastern_teams,
-                "season": datetime.now().year,
-                "source": "ESPN",
-            }
+            return None
 
         except Exception as e:
-            logger.error(f"Error fetching ESPN standings: {e}")
-            raise ESPNAPIError(f"Failed to get standings: {e}")
+            logger.error(f"Error finding team ID: {e}")
+            return None
 
     async def get_team_roster(self, team_name: str) -> Dict[str, Any]:
-        """
-        Get team roster from ESPN.
-
-        Args:
-            team_name: Name of the team
-
-        Returns:
-            Dictionary with roster data
-        """
+        """Get team roster from ESPN."""
         try:
-            # First get teams list to find the team ID
-            teams_data = await self._make_request("teams")
-
-            target_team = None
-            normalized_name = self._normalize_team_name(team_name)
-
-            # Find the team
-            for team in (
-                teams_data.get("sports", [{}])[0]
-                .get("leagues", [{}])[0]
-                .get("teams", [])
-            ):
-                team_info = team.get("team", {})
-                if (
-                    normalized_name in team_info.get("slug", "").lower()
-                    or normalized_name in team_info.get("displayName", "").lower()
-                    or team_name.lower() in team_info.get("displayName", "").lower()
-                ):
-                    target_team = team_info
-                    break
-
-            if not target_team:
+            # Find team ID
+            team_id = await self.find_team_id(team_name)
+            if not team_id:
                 return {
                     "error": True,
                     "message": f"Team '{team_name}' not found in ESPN data",
                 }
 
-            team_id = target_team.get("id")
-            if not team_id:
-                return {"error": True, "message": "Could not find team ID"}
-
             # Get roster data
-            roster_data = await self._make_request(f"teams/{team_id}/roster")
+            try:
+                roster_data = await self._make_request(f"teams/{team_id}/roster")
+            except ESPNAPIError as e:
+                if "404" in str(e):
+                    return {
+                        "error": True,
+                        "message": "ESPN roster data not available for this team",
+                    }
+                raise
 
             athletes = roster_data.get("athletes", [])
             if not athletes:
                 return {"error": True, "message": "No roster data available"}
 
-            # Process roster data
+            # Process roster data - each athlete is a direct object
             players = []
             positions = {}
 
-            for athlete_group in athletes:
-                position_name = athlete_group.get("position", {}).get(
-                    "displayName", "Unknown"
-                )
-                group_athletes = athlete_group.get("items", [])
+            for athlete in athletes:
+                position_info = athlete.get("position", {})
+                position_name = position_info.get("displayName", "Unknown")
 
-                position_players = []
-                for athlete in group_athletes:
-                    player_info = {
-                        "name": athlete.get("displayName", "Unknown"),
-                        "position": position_name,
-                        "jersey": athlete.get("jersey", ""),
-                        "age": athlete.get("age", ""),
-                        "height": athlete.get("displayHeight", ""),
-                        "weight": athlete.get("displayWeight", ""),
-                        "nationality": "Unknown",  # ESPN doesn't always provide this
-                        "headshot": athlete.get("headshot", {}).get("href", ""),
-                    }
-                    players.append(player_info)
-                    position_players.append(player_info)
+                # Extract nationality from citizenship or birthPlace
+                nationality = "Unknown"
+                if athlete.get("citizenship"):
+                    nationality = athlete.get("citizenship", "Unknown")
+                elif athlete.get("birthPlace", {}).get("country"):
+                    nationality = athlete.get("birthPlace", {}).get(
+                        "country", "Unknown"
+                    )
 
-                if position_players:
-                    positions[position_name] = position_players
+                player_info = {
+                    "name": athlete.get("displayName", "Unknown"),
+                    "position": position_name,
+                    "jersey": athlete.get("jersey", ""),
+                    "age": athlete.get("age", ""),
+                    "height": athlete.get("displayHeight", ""),
+                    "weight": athlete.get("displayWeight", ""),
+                    "nationality": nationality,
+                    "headshot": athlete.get("headshot", {}).get("href", "")
+                    if athlete.get("headshot")
+                    else "",
+                }
+                players.append(player_info)
+
+                # Group by position
+                if position_name not in positions:
+                    positions[position_name] = []
+                positions[position_name].append(player_info)
+
+            # Get team info
+            team_info = roster_data.get("team", {})
 
             return {
                 "error": False,
-                "team_name": target_team.get("displayName", team_name),
-                "team_logo": target_team.get("logo", ""),
-                "team_color": target_team.get("color", ""),
+                "team_name": team_info.get("displayName", team_name),
+                "team_logo": team_info.get("logos", [{}])[0].get("href", "")
+                if team_info.get("logos")
+                else "",
+                "team_color": team_info.get("color", ""),
                 "players": players,
                 "positions": positions,
                 "total_players": len(players),
                 "source": "ESPN",
             }
 
+        except ESPNAPIError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching ESPN roster: {e}")
             raise ESPNAPIError(f"Failed to get roster: {e}")
+
+    async def get_mls_standings(self) -> Dict[str, Any]:
+        """ESPN MLS standings are not available - return error."""
+        return {"error": True, "message": "ESPN MLS standings not available"}
 
 
 # Global ESPN client instance
