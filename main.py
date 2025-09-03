@@ -194,10 +194,12 @@ async def main():
             # Close API client sessions
             from api.sports_api import sports_client
             from api.news_api import news_client
+            from api.espn_api import espn_client
 
             logger.info("Closing API client sessions...")
             await sports_client.close()
             await news_client.close()
+            await espn_client.close()
 
             # Close bot connection
             logger.info("Closing bot connection...")

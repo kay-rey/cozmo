@@ -119,6 +119,15 @@ NEWS_CHANNEL_ID=your_news_channel_id_here
 
 - **TheSportsDB**: Free tier available at [thesportsdb.com](https://www.thesportsdb.com/api.php)
 
+  - 🎯 **Used for**: Player statistics and detailed player information
+  - ⚠️ **Note**: Free tier has limited roster data
+  - 💰 **Pro version** ($3/month) provides complete data access
+
+- **ESPN API**: No key required (unofficial public API)
+  - 🏟️ **Used for**: Complete team rosters and live standings
+  - ✅ **Provides**: Full roster data with positions and player details
+  - 🔄 **Fallback**: Automatically falls back to TheSportsDB if unavailable
+
 ## 🧪 Testing & Quality Assurance
 
 ### Full Test Suite
@@ -212,9 +221,10 @@ python3 main.py
 ### Recently Added Features ✨
 
 - 🆕 **Modern Slash Commands**: Native Discord slash command support for all stats features
-- 👥 **Team Rosters**: Complete team rosters organized by position with player nationalities
+- 👥 **Complete Team Rosters**: Full team rosters with all positions using hybrid API approach
 - 📋 **Match Lineups**: Starting XI and substitute information for matches
-- 🏟️ **Conference Filtering**: Filter MLS standings by Western or Eastern conference
+- 🏟️ **Live Standings**: Real-time MLS standings with points, wins, losses, and goal difference
+- 🔄 **Hybrid API System**: Uses multiple data sources for the most complete information
 - ⚡ **Guild-Specific Sync**: Faster slash command deployment for server admins
 
 ### Planned Features

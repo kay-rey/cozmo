@@ -340,6 +340,91 @@ async def get_standings() -> dict:
         raise SportsAPIError(f"Failed to get MLS conference information: {e}")
 
 
+async def get_team_roster_hybrid(team_name: str = "LA Galaxy") -> dict:
+    """
+    Get team roster using hybrid approach - try ESPN first, fallback to TheSportsDB.
+
+    Args:
+        team_name: Name of the team to get roster for
+
+    Returns:
+        Dictionary with roster data for creating Discord embeds
+
+    Raises:
+        SportsAPIError: If both APIs fail
+    """
+    try:
+        # Try ESPN first (better roster data)
+        from api.espn_api import espn_client, ESPNAPIError
+
+        try:
+            logger.info(f"Trying ESPN API for roster: {team_name}")
+            espn_data = await espn_client.get_team_roster(team_name)
+
+            if not espn_data.get("error", False):
+                logger.info(f"Successfully got roster from ESPN for: {team_name}")
+                return espn_data
+            else:
+                logger.warning(
+                    f"ESPN API returned error for {team_name}: {espn_data.get('message')}"
+                )
+
+        except ESPNAPIError as e:
+            logger.warning(f"ESPN API failed for roster {team_name}: {e}")
+        except Exception as e:
+            logger.warning(
+                f"Unexpected error with ESPN API for roster {team_name}: {e}"
+            )
+
+        # Fallback to TheSportsDB
+        logger.info(f"Falling back to TheSportsDB for roster: {team_name}")
+        return await get_team_roster(team_name)
+
+    except Exception as e:
+        logger.error(f"All APIs failed for roster {team_name}: {e}")
+        raise SportsAPIError(f"Failed to get team roster from all sources: {e}")
+
+
+async def get_standings_hybrid() -> dict:
+    """
+    Get MLS standings using hybrid approach - try ESPN first, fallback to TheSportsDB.
+
+    Returns:
+        Dictionary with standings data for creating Discord embeds
+
+    Raises:
+        SportsAPIError: If both APIs fail
+    """
+    try:
+        # Try ESPN first (better standings data)
+        from api.espn_api import espn_client, ESPNAPIError
+
+        try:
+            logger.info("Trying ESPN API for standings")
+            espn_data = await espn_client.get_mls_standings()
+
+            if not espn_data.get("error", False):
+                logger.info("Successfully got standings from ESPN")
+                return espn_data
+            else:
+                logger.warning(
+                    f"ESPN API returned error for standings: {espn_data.get('message')}"
+                )
+
+        except ESPNAPIError as e:
+            logger.warning(f"ESPN API failed for standings: {e}")
+        except Exception as e:
+            logger.warning(f"Unexpected error with ESPN API for standings: {e}")
+
+        # Fallback to TheSportsDB
+        logger.info("Falling back to TheSportsDB for standings")
+        return await get_standings()
+
+    except Exception as e:
+        logger.error(f"All APIs failed for standings: {e}")
+        raise SportsAPIError(f"Failed to get standings from all sources: {e}")
+
+
 async def get_team_roster(team_name: str = "LA Galaxy") -> dict:
     """
     Fetch team roster/squad information.

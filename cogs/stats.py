@@ -8,12 +8,13 @@ from discord.ext import commands
 import discord
 
 from api.sports_api import (
-    get_standings,
+    get_standings_hybrid,
+    get_team_roster_hybrid,
     get_player_stats,
-    get_team_roster,
     get_match_lineup,
     SportsAPIError,
 )
+from api.espn_api import ESPNAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -94,8 +95,8 @@ class StatsCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            # Fetch standings data from Sports API
-            standings_data = await get_standings()
+            # Fetch standings data using hybrid approach
+            standings_data = await get_standings_hybrid()
 
             # Get team data first
             west_teams = standings_data.get("western_conference", [])
@@ -475,7 +476,7 @@ class StatsCog(commands.Cog):
         await interaction.response.defer()
 
         try:
-            roster_data = await get_team_roster(team_name)
+            roster_data = await get_team_roster_hybrid(team_name)
 
             if roster_data.get("error", False):
                 embed = discord.Embed(
@@ -508,6 +509,23 @@ class StatsCog(commands.Cog):
             # Set team badge if available
             if roster_data.get("team_badge"):
                 embed.set_thumbnail(url=roster_data["team_badge"])
+
+            # Add data source info and disclaimer if needed
+            data_source = roster_data.get("source", "TheSportsDB")
+            total_players = roster_data.get("total_players", 0)
+
+            if data_source == "ESPN":
+                embed.add_field(
+                    name="📊 Data Source",
+                    value="ESPN (Enhanced roster data)",
+                    inline=True,
+                )
+            elif total_players < 15:  # Most MLS teams have 25+ players
+                embed.add_field(
+                    name="⚠️ Limited Data Available",
+                    value="Partial roster shown. Trying multiple sources for complete data.",
+                    inline=False,
+                )
 
             # Group players by position for better display
             positions = roster_data.get("positions", {})
