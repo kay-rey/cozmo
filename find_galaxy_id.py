@@ -38,29 +38,20 @@ async def find_galaxy_team():
 
         print(f"📊 Found {len(teams)} MLS teams")
 
-        # Look for LA Galaxy
+        # Print ALL teams and their IDs
+        print("🏟️ All MLS Teams:")
         galaxy_team = None
         for team_entry in teams:
             team_info = team_entry.get("team", {})
-            team_name = team_info.get("displayName", "").lower()
+            team_name = team_info.get("displayName", "")
+            team_id = team_info.get("id")
+            print(f"   ID: {team_id}, Name: {team_name}")
 
-            if "galaxy" in team_name:
+            if "galaxy" in team_name.lower():
                 galaxy_team = team_info
-                print(f"🌟 Found LA Galaxy!")
-                print(f"   ID: {team_info.get('id')}")
-                print(f"   Name: {team_info.get('displayName')}")
-                print(f"   Slug: {team_info.get('slug')}")
-                break
 
         if not galaxy_team:
             print("❌ LA Galaxy not found")
-            # Print first few teams for reference
-            print("Available teams:")
-            for i, team_entry in enumerate(teams[:10]):
-                team_info = team_entry.get("team", {})
-                print(
-                    f"   {i + 1}. {team_info.get('displayName')} (ID: {team_info.get('id')})"
-                )
             return
 
         # Test roster endpoint
