@@ -92,8 +92,8 @@
   - Implement text-based answer processing for fill-in-the-blank questions
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 7. Create challenge system for daily and weekly events
-- [ ] 7.1 Implement daily challenge functionality
+- [x] 7. Create challenge system for daily and weekly events
+- [x] 7.1 Implement daily challenge functionality
 
   - Create daily challenge question selection with double point rewards
   - Implement daily challenge completion tracking and prevention of multiple attempts
@@ -101,7 +101,7 @@
   - Create !dailychallenge command with proper embed formatting
   - _Requirements: 6.1, 6.2_
 
-- [ ] 7.2 Implement weekly challenge system
+- [x] 7.2 Implement weekly challenge system
 
   - Create weekly challenge with 5-question format and triple point rewards
   - Implement automatic weekly challenge posting every Monday
