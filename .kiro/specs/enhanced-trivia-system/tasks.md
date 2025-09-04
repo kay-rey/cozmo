@@ -8,15 +8,15 @@
   - Write database backup and recovery utilities
   - _Requirements: 10.1, 10.3, 10.4_
 
-- [ ] 2. Create enhanced question data structure and management
-- [ ] 2.1 Expand trivia questions with difficulty levels and categories
+- [x] 2. Create enhanced question data structure and management
+- [x] 2.1 Expand trivia questions with difficulty levels and categories
 
   - Extend existing trivia_questions.py with difficulty levels (easy, medium, hard) and categories
   - Add at least 15 questions per difficulty level with proper categorization
   - Include question explanations and point values for each question
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 2.2 Implement Question Engine class
+- [x] 2.2 Implement Question Engine class
 
   - Create QuestionEngine class with question selection logic based on difficulty and type
   - Implement question validation and formatting methods for different question types
