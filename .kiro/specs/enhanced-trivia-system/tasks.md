@@ -58,8 +58,8 @@
   - Write unit tests for achievement logic and edge cases
   - _Requirements: 5.4, 5.5_
 
-- [ ] 5. Create leaderboard and ranking system
-- [ ] 5.1 Implement LeaderboardManager class
+- [x] 5. Create leaderboard and ranking system
+- [x] 5.1 Implement LeaderboardManager class
 
   - Create leaderboard calculation and caching system
   - Implement weekly and monthly ranking periods with automatic resets
@@ -67,7 +67,7 @@
   - Create efficient database queries for leaderboard operations
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 5.2 Build leaderboard display and ranking commands
+- [x] 5.2 Build leaderboard display and ranking commands
 
   - Implement !leaderboard command with period filtering and pagination
   - Create !myrank command showing user's current position and nearby ranks
