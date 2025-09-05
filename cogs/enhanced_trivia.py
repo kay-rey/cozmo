@@ -170,24 +170,24 @@ class EnhancedTriviaCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            # Filter for multiple choice questions only
-            multiple_choice_questions = [
+            # Filter for supported question types (multiple choice and true/false)
+            supported_questions = [
                 q
                 for q in ALL_QUESTIONS_FLAT
-                if q.get("question_type") == "multiple_choice"
+                if q.get("question_type") in ["multiple_choice", "true_false"]
             ]
 
-            if not multiple_choice_questions:
+            if not supported_questions:
                 embed = discord.Embed(
                     title="❌ Trivia Unavailable",
-                    description="Sorry, no multiple choice questions are available right now.",
+                    description="Sorry, no trivia questions are available right now.",
                     color=discord.Color.red(),
                 )
                 await ctx.send(embed=embed)
                 return
 
             # Select a random question
-            question_data = random.choice(multiple_choice_questions)
+            question_data = random.choice(supported_questions)
 
             # Create Discord embed for the trivia question
             embed = discord.Embed(
@@ -196,18 +196,38 @@ class EnhancedTriviaCog(commands.Cog):
                 color=0x00274C,  # LA Galaxy navy blue
             )
 
-            # Add options as fields
-            options = question_data["options"]
-            option_letters = ["🇦", "🇧", "🇨", "🇩"]
+            # Handle different question types
+            if question_data["question_type"] == "multiple_choice":
+                # Add options as fields for multiple choice
+                options = question_data["options"]
+                option_letters = ["🇦", "🇧", "🇨", "🇩"]
 
-            for i, option in enumerate(options):
+                for i, option in enumerate(options):
+                    embed.add_field(
+                        name=f"{option_letters[i]} {chr(65 + i)}",
+                        value=option,
+                        inline=False,
+                    )
+
+                embed.set_footer(text="React with 🇦, 🇧, 🇨, or 🇩 to answer!")
+                reactions_to_add = option_letters
+
+            elif question_data["question_type"] == "true_false":
+                # Add true/false options
                 embed.add_field(
-                    name=f"{option_letters[i]} {chr(65 + i)}",
-                    value=option,
-                    inline=False,
+                    name="✅ True", value="This statement is correct", inline=True
                 )
-
-            embed.set_footer(text="React with 🇦, 🇧, 🇨, or 🇩 to answer!")
+                embed.add_field(
+                    name="❌ False", value="This statement is incorrect", inline=True
+                )
+                embed.set_footer(text="React with ✅ for True or ❌ for False!")
+                reactions_to_add = ["✅", "❌"]
+                options = ["True", "False"]  # For compatibility
+            else:
+                # Fallback for other types
+                embed.set_footer(text="Type your answer in chat!")
+                reactions_to_add = []
+                options = []
 
             # Send the question
             message = await ctx.send(embed=embed)
@@ -217,15 +237,16 @@ class EnhancedTriviaCog(commands.Cog):
                 "message_id": message.id,
                 "correct_answer": question_data["correct_answer"],
                 "question": question_data["question"],
+                "question_type": question_data["question_type"],
                 "options": options,
             }
 
             # Add reaction emojis for user interaction
             try:
-                for emoji in option_letters:
+                for emoji in reactions_to_add:
                     await message.add_reaction(emoji)
                 logger.info(
-                    f"Successfully started simple trivia game in channel {channel_id}"
+                    f"Successfully started simple trivia game ({question_data['question_type']}) in channel {channel_id}"
                 )
             except discord.Forbidden:
                 logger.error("Missing permissions to add reactions")
@@ -401,6 +422,49 @@ class EnhancedTriviaCog(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ Debug error: {e}")
             logger.error(f"Enhanced trivia debug error: {e}")
+
+    @commands.command(name="cleargames", hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def clear_games(self, ctx, channel_id: int = None):
+        """Clear stuck trivia games (admin only)."""
+        try:
+            target_channel_id = channel_id or ctx.channel.id
+            cleared = []
+
+            # Clear enhanced games
+            if hasattr(self, "game_manager") and self.game_manager:
+                try:
+                    await self.game_manager.end_game(target_channel_id)
+                    cleared.append("Enhanced game")
+                except Exception as e:
+                    logger.info(f"No enhanced game to clear: {e}")
+
+            # Clear simple games
+            if hasattr(self, "active_games") and target_channel_id in self.active_games:
+                del self.active_games[target_channel_id]
+                cleared.append("Simple game")
+
+            if cleared:
+                embed = discord.Embed(
+                    title="🧹 Games Cleared",
+                    description=f"Cleared: {', '.join(cleared)} in <#{target_channel_id}>",
+                    color=discord.Color.green(),
+                )
+            else:
+                embed = discord.Embed(
+                    title="ℹ️ No Games Found",
+                    description=f"No active games found in <#{target_channel_id}>",
+                    color=discord.Color.blue(),
+                )
+
+            await ctx.send(embed=embed)
+            logger.info(
+                f"Admin {ctx.author} cleared games in channel {target_channel_id}"
+            )
+
+        except Exception as e:
+            await ctx.send(f"❌ Clear games error: {e}")
+            logger.error(f"Clear games error: {e}")
 
     @commands.command(name="triviareport", aliases=["report"])
     async def trivia_report(self, ctx):
@@ -802,8 +866,33 @@ class EnhancedTriviaCog(commands.Cog):
     async def _handle_challenge_timeout(self, ctx, user_id: int, challenge_type: str):
         """Handle challenge timeout."""
         try:
+            channel_id = ctx.channel.id
+
+            # Clean up enhanced game if exists
+            if hasattr(self, "game_manager") and self.game_manager:
+                try:
+                    await self.game_manager.end_game(channel_id)
+                    logger.info(
+                        f"Cleaned up enhanced challenge game in channel {channel_id} due to timeout"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to clean up enhanced challenge game: {e}")
+
+            # Clean up simple game if exists
+            if hasattr(self, "active_games") and channel_id in self.active_games:
+                del self.active_games[channel_id]
+                logger.info(
+                    f"Cleaned up simple challenge game in channel {channel_id} due to timeout"
+                )
+
             # Cancel the active challenge
-            await self.challenge_system.cancel_active_challenge(user_id, challenge_type)
+            if hasattr(self, "challenge_system") and self.challenge_system:
+                try:
+                    await self.challenge_system.cancel_active_challenge(
+                        user_id, challenge_type
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to cancel challenge: {e}")
 
             embed = discord.Embed(
                 title="⏰ Challenge Timed Out",
@@ -820,12 +909,32 @@ class EnhancedTriviaCog(commands.Cog):
     async def _handle_trivia_timeout(self, ctx):
         """Handle trivia game timeout."""
         try:
+            channel_id = ctx.channel.id
+
+            # Clean up enhanced game if exists
+            if hasattr(self, "game_manager") and self.game_manager:
+                try:
+                    await self.game_manager.end_game(channel_id)
+                    logger.info(
+                        f"Cleaned up enhanced game in channel {channel_id} due to timeout"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to clean up enhanced game: {e}")
+
+            # Clean up simple game if exists
+            if hasattr(self, "active_games") and channel_id in self.active_games:
+                del self.active_games[channel_id]
+                logger.info(
+                    f"Cleaned up simple game in channel {channel_id} due to timeout"
+                )
+
             embed = discord.Embed(
                 title="⏰ Time's Up!",
                 description="The trivia question has timed out. Try again with `!trivia`!",
                 color=discord.Color.orange(),
             )
             await ctx.send(embed=embed)
+
         except Exception as e:
             logger.error(f"Error handling trivia timeout: {e}")
 
@@ -935,19 +1044,44 @@ class EnhancedTriviaCog(commands.Cog):
                 logger.info(f"Message ID mismatch - ignoring reaction")
                 return
 
-            # Map emoji to answer index
-            emoji_to_index = {"🇦": 0, "🇧": 1, "🇨": 2, "🇩": 3}
+            # Handle different question types
+            question_type = game_data.get("question_type", "multiple_choice")
 
-            # Check if the reaction is a valid answer option
-            if str(reaction.emoji) not in emoji_to_index:
+            if question_type == "multiple_choice":
+                # Map emoji to answer index for multiple choice
+                emoji_to_index = {"🇦": 0, "🇧": 1, "🇨": 2, "🇩": 3}
+
+                if str(reaction.emoji) not in emoji_to_index:
+                    return
+
+                user_answer = emoji_to_index[str(reaction.emoji)]
+
+            elif question_type == "true_false":
+                # Map emoji to answer for true/false
+                emoji_to_answer = {"✅": True, "❌": False}
+
+                if str(reaction.emoji) not in emoji_to_answer:
+                    return
+
+                user_answer_bool = emoji_to_answer[str(reaction.emoji)]
+                # Convert to index (0 = True, 1 = False for compatibility)
+                user_answer = 0 if user_answer_bool else 1
+
+            else:
+                # Unsupported question type for reactions
                 return
 
-            user_answer = emoji_to_index[str(reaction.emoji)]
             correct_answer = game_data["correct_answer"]
 
-            # Validate correct answer index
-            if not (0 <= correct_answer < len(game_data["options"])):
+            # Validate correct answer
+            options = game_data.get("options", [])
+            if question_type == "multiple_choice" and not (
+                0 <= correct_answer < len(options)
+            ):
                 logger.error(f"Invalid correct answer index: {correct_answer}")
+                return
+            elif question_type == "true_false" and correct_answer not in [0, 1]:
+                logger.error(f"Invalid true/false answer: {correct_answer}")
                 return
 
             # Create response embed
@@ -958,12 +1092,22 @@ class EnhancedTriviaCog(commands.Cog):
                     description=f"**{user.display_name}** got it right!",
                     color=0x00FF00,  # Green
                 )
-                embed.add_field(
-                    name="Answer",
-                    value=f"🇦🇧🇨🇩"[correct_answer]
-                    + f" {game_data['options'][correct_answer]}",
-                    inline=False,
-                )
+
+                # Show the correct answer based on question type
+                if question_type == "multiple_choice":
+                    embed.add_field(
+                        name="Answer",
+                        value=f"🇦🇧🇨🇩"[correct_answer] + f" {options[correct_answer]}",
+                        inline=False,
+                    )
+                elif question_type == "true_false":
+                    correct_text = "✅ True" if correct_answer == 0 else "❌ False"
+                    embed.add_field(
+                        name="Answer",
+                        value=correct_text,
+                        inline=False,
+                    )
+
                 logger.info(
                     f"User {user.display_name} answered trivia correctly in channel {channel_id}"
                 )
@@ -974,12 +1118,22 @@ class EnhancedTriviaCog(commands.Cog):
                     description=f"Sorry **{user.display_name}**, that's not right.",
                     color=0xFF0000,  # Red
                 )
-                embed.add_field(
-                    name="Correct Answer",
-                    value=f"🇦🇧🇨🇩"[correct_answer]
-                    + f" {game_data['options'][correct_answer]}",
-                    inline=False,
-                )
+
+                # Show the correct answer based on question type
+                if question_type == "multiple_choice":
+                    embed.add_field(
+                        name="Correct Answer",
+                        value=f"🇦🇧🇨🇩"[correct_answer] + f" {options[correct_answer]}",
+                        inline=False,
+                    )
+                elif question_type == "true_false":
+                    correct_text = "✅ True" if correct_answer == 0 else "❌ False"
+                    embed.add_field(
+                        name="Correct Answer",
+                        value=correct_text,
+                        inline=False,
+                    )
+
                 logger.info(
                     f"User {user.display_name} answered trivia incorrectly in channel {channel_id}"
                 )
