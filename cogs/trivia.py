@@ -44,8 +44,38 @@ class TriviaCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            # Select a random question
-            question_data = random.choice(QUESTIONS)
+            # Flatten all questions from all difficulty levels
+            all_questions = []
+            for difficulty_level in QUESTIONS.values():
+                all_questions.extend(difficulty_level)
+
+            if not all_questions:
+                logger.error("No trivia questions found in any difficulty level")
+                embed = discord.Embed(
+                    title="❌ Trivia Unavailable",
+                    description="Sorry, trivia questions are not available right now. Please try again later.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            # Filter for multiple choice questions only (for now)
+            multiple_choice_questions = [
+                q for q in all_questions if q.get("question_type") == "multiple_choice"
+            ]
+
+            if not multiple_choice_questions:
+                logger.error("No multiple choice questions available")
+                embed = discord.Embed(
+                    title="❌ Trivia Unavailable",
+                    description="Sorry, no multiple choice questions are available right now. Please try again later.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            # Select a random multiple choice question
+            question_data = random.choice(multiple_choice_questions)
 
             # Validate question data structure
             required_keys = ["question", "options", "correct_answer"]
