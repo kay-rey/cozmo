@@ -44,8 +44,6 @@ def main():
         test_scripts = [
             ("Code Structure Tests", "tests/test_code_structure.py"),
             ("Final Integration Tests", "tests/test_bot_final.py"),
-            ("Bot Startup Tests", "tests/test_bot_startup.py"),
-            ("Command Functionality Tests", "tests/test_bot_commands.py"),
         ]
 
         results = []

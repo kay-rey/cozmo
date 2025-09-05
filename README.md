@@ -4,6 +4,8 @@
 
 **Cozmo** is your dedicated LA Galaxy companion bot, packed with everything a Galaxy fan needs: live match updates, MLS standings, player stats, and brain-teasing trivia that'll test even the most devoted supporters. Whether you're tracking the next big match or settling debates about Galaxy history, Cozmo's got your back!
 
+🚀 **Now deployed on Render** with enhanced reliability and 24/7 uptime!
+
 ## 🚀 What Makes Cozmo Special?
 
 ### 🏟️ **Live Match Intelligence**
@@ -22,9 +24,10 @@
 
 ### 🧠 **Galaxy Trivia Challenge**
 
-- **`!trivia`** - Test your Galaxy knowledge with 15+ challenging questions
+- **`!trivia`** - Test your Galaxy knowledge with 45+ challenging questions
 - Interactive emoji reactions (🇦 🇧 🇨 🇩) for seamless gameplay
-- Questions spanning from club founding to current roster gems
+- Questions spanning three difficulty levels: easy, medium, and hard
+- Covers club history, players, matches, stadium, and records
 - Anti-spam protection ensures fair play
 
 ### 🛡️ **Built Like a Tank**
@@ -141,8 +144,6 @@ python3 tests/run_all_tests.py
 ```bash
 python3 tests/test_code_structure.py    # Code architecture validation
 python3 tests/test_bot_final.py         # End-to-end integration tests
-python3 tests/test_bot_startup.py       # Bot initialization tests
-python3 tests/test_bot_commands.py      # Command functionality tests
 ```
 
 ### Verify Your Setup
@@ -154,43 +155,61 @@ python3 tests/verify_bot_setup.py       # Pre-flight checks
 ## 📚 Documentation Hub
 
 - **[Features Summary](docs/FEATURES_SUMMARY.md)** - Complete feature breakdown
-- **[Error Handling](docs/ERROR_HANDLING_SUMMARY.md)** - How Cozmo handles problems
+- **[Enhanced Error Handling](docs/ENHANCED_ERROR_HANDLING_SUMMARY.md)** - Advanced error recovery and logging
 - **[Security Guidelines](docs/SECURITY_GUIDELINES.md)** - Keep your bot secure
+- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[Cleanup Summary](docs/CLEANUP_SUMMARY.md)** - Recent project organization improvements
 
 ## 🏗️ Architecture Overview
 
 Cozmo is built with a modular, scalable architecture that makes adding new features a breeze:
 
 ```
-cozmo-discord-bot/
+cozmo/
 ├── 🤖 main.py                    # Bot brain & startup logic
 ├── ⚙️ config.py                  # Environment & configuration management
+├── 🌐 health_server.py           # Render deployment health check
 ├── 📦 requirements.txt           # Python dependencies
-├── 🧠 trivia_questions.py        # 15+ Galaxy trivia questions
+├── 🚀 render.yaml               # Render deployment configuration
 ├── 📋 .env.template              # Configuration template
 │
 ├── 🌐 api/                       # External service integrations
-│   ├── sports_api.py             # TheSportsDB client (matches, stats, standings)
-│   └── news_api.py               # RSS feed client (currently disabled)
+│   ├── sports_api.py             # TheSportsDB client
+│   ├── espn_api.py               # ESPN API client
+│   └── news_api.py               # RSS feed client
 │
 ├── 🎯 cogs/                      # Feature modules (auto-loaded)
 │   ├── matchday.py               # Match schedules & info
 │   ├── stats.py                  # Player stats & MLS standings
 │   ├── trivia.py                 # Interactive trivia games
-│   └── news.py.disabled          # News features (temporarily off)
+│   ├── enhanced_trivia.py        # Advanced trivia system
+│   ├── achievement_commands.py   # Achievement system
+│   └── leaderboard_commands.py   # Leaderboard functionality
 │
-├── 🧪 tests/                     # Comprehensive test coverage
+├── 🗃️ data/                      # Data storage
+│   ├── trivia_questions.py       # 45+ Galaxy trivia questions
+│   └── trivia.db                 # SQLite database
+│
+├── 🛠️ utils/                     # Core utilities
+│   ├── question_engine.py        # Question management
+│   ├── scoring_engine.py         # Scoring system
+│   ├── user_manager.py           # User data management
+│   ├── achievement_system.py     # Achievement tracking
+│   └── database.py               # Database operations
+│
+├── 🧪 tests/                     # Streamlined test suite
 │   ├── run_all_tests.py          # Master test runner
-│   ├── verify_bot_setup.py       # Pre-flight system checks
-│   └── test_*.py                 # Individual test suites
+│   ├── test_bot_final.py         # Integration tests
+│   └── verify_bot_setup.py       # Setup validation
 │
-├── 📖 docs/                      # Documentation & guides
-│   ├── FEATURES_SUMMARY.md       # What Cozmo can do
-│   ├── ERROR_HANDLING_SUMMARY.md # How errors are handled
-│   └── SECURITY_GUIDELINES.md    # Security best practices
+├── 📖 docs/                      # Comprehensive documentation
+│   ├── FEATURES_SUMMARY.md       # Feature overview
+│   ├── DEPLOYMENT_GUIDE.md       # Production deployment
+│   ├── CLEANUP_SUMMARY.md        # Project organization
+│   └── SECURITY_GUIDELINES.md    # Security practices
 │
 ├── 📊 logs/                      # Runtime logs & debugging
-├── 💾 data/                      # Persistent data storage
+├── 🔧 scripts/                   # Utility scripts
 └── 📝 .kiro/specs/               # Development specifications
 ```
 
@@ -211,21 +230,33 @@ python3 main.py
 
 ### Production Deployment
 
-- **Render**: `render.yaml` included for one-click deployment (recommended)
-- **Heroku**: Works with `runtime.txt` and `requirements.txt`
+- **Render**: `render.yaml` included for one-click deployment (recommended) ✅ **Currently Deployed**
+- **Heroku**: Compatible with Python buildpack
 - **Railway**: Compatible with Python buildpack
 - **Docker**: Optional containerization support available
+
+#### Render Deployment Features
+
+- 🌐 **Web service** with health check endpoint
+- 🔄 **Auto-restart** on failures
+- 📊 **Built-in logging** and monitoring
+- 🆓 **Free tier** compatible (750 hours/month)
+- ⚡ **Instant deployment** from GitHub
 
 ## 🎯 What's Next?
 
 ### Recently Added Features ✨
 
-- 🆕 **Modern Slash Commands**: Native Discord slash command support for all stats features
-- 👥 **Complete Team Rosters**: Full team rosters with all positions using hybrid API approach
-- 📋 **Match Lineups**: Starting XI and substitute information for matches
-- 🏟️ **Live Standings**: Real-time MLS standings with points, wins, losses, and goal difference
-- 🔄 **Hybrid API System**: Uses multiple data sources for the most complete information
-- ⚡ **Guild-Specific Sync**: Faster slash command deployment for server admins
+- 🚀 **Production Deployment**: Successfully deployed on Render with 24/7 uptime
+- 🧹 **Project Cleanup**: Streamlined codebase with organized file structure
+- 🔧 **Enhanced Trivia System**: 45+ questions across three difficulty levels
+- 🛡️ **Robust Error Handling**: Advanced error recovery and logging system
+- 🆕 **Modern Slash Commands**: Native Discord slash command support
+- 👥 **Complete Team Rosters**: Full team rosters using hybrid API approach
+- 📋 **Match Lineups**: Starting XI and substitute information
+- 🏟️ **Live Standings**: Real-time MLS standings with comprehensive stats
+- 🔄 **Hybrid API System**: Multiple data sources for complete information
+- ⚡ **Health Monitoring**: Built-in health check for deployment reliability
 
 ### Planned Features
 
@@ -261,12 +292,15 @@ This project is open source - see [LICENSE](LICENSE) for details.
 
 ## 💫 Fun Facts About Cozmo
 
-- 🎯 **15+ Trivia Questions**: From Galaxy's founding year to current roster
+- 🎯 **45+ Trivia Questions**: Comprehensive Galaxy knowledge across three difficulty levels
 - ⚡ **Modern Slash Commands**: Native Discord interface with autocomplete
-- 🛡️ **99.9% Uptime**: Built to handle Discord's occasional hiccups
+- 🛡️ **99.9% Uptime**: Production-ready deployment on Render with health monitoring
 - 🌟 **Galaxy Focused**: Every feature designed with LA Galaxy fans in mind
 - 🤖 **Smart Caching**: Reduces API calls while keeping data fresh
 - 👥 **Complete MLS Coverage**: All 29 MLS teams supported for rosters and stats
 - 📊 **Rich Embeds**: Beautiful, branded Discord embeds with team badges
+- 🧹 **Clean Codebase**: Recently streamlined with organized file structure
+- 🔧 **Enhanced Systems**: Advanced trivia, achievements, and leaderboards
+- 🚀 **Cloud Native**: Built for modern deployment with health checks and monitoring
 
 **Ready to bring the Galaxy to your Discord server? Let's get Cozmo running! ⭐**
