@@ -139,7 +139,7 @@ QUESTIONS = {
             "category": "records",
             "options": ["3", "4", "5", "6"],
             "correct_answer": 3,
-            "explanation": "LA Galaxy has won 5 MLS Cup championships: 2002, 2005, 2012, 2014, and 2023.",
+            "explanation": "LA Galaxy has won 6 MLS Cup championships: 2002, 2005, 2012, 2014, and 2023.",
             "point_value": 10,
         },
         {

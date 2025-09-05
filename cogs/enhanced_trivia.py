@@ -31,22 +31,27 @@ class EnhancedTriviaCog(commands.Cog):
     async def cog_load(self):
         """Initialize components when cog is loaded."""
         try:
-            # Initialize database
+            # Try to initialize enhanced components
             await db_manager.initialize_database()
-
-            # Initialize question engine
             self.question_engine = QuestionEngine()
-
-            # Initialize game manager
             self.game_manager = GameManager(self.question_engine, self.bot)
-
-            # Initialize challenge system
             self.challenge_system = ChallengeSystem(self.question_engine, user_manager)
 
             logger.info("Enhanced trivia system components initialized successfully")
+            self.enhanced_mode = True
+
         except Exception as e:
-            logger.error(f"Failed to initialize enhanced trivia components: {e}")
-            raise
+            logger.warning(f"Enhanced trivia components failed to initialize: {e}")
+            logger.info("Falling back to simple trivia mode")
+
+            # Set fallback mode
+            self.enhanced_mode = False
+            self.question_engine = None
+            self.game_manager = None
+            self.challenge_system = None
+
+            # Initialize simple game tracking
+            self.active_games = {}
 
     async def cog_unload(self):
         """Clean up when cog is unloaded."""
@@ -81,58 +86,157 @@ class EnhancedTriviaCog(commands.Cog):
             if difficulty:
                 difficulty = difficulty.lower()
 
-            # Check if there's already an active game in this channel
-            if await self.game_manager.get_active_game(channel_id):
+            # Try enhanced system first
+            if hasattr(self, "game_manager") and self.game_manager:
+                try:
+                    # Check if there's already an active game in this channel
+                    if await self.game_manager.get_active_game(channel_id):
+                        embed = discord.Embed(
+                            title="🎮 Game Already Active",
+                            description="There's already a trivia game active in this channel! Finish it first.",
+                            color=discord.Color.orange(),
+                        )
+                        await ctx.send(embed=embed)
+                        return
+
+                    # Get user preferences if no difficulty specified
+                    if not difficulty:
+                        user_profile = await user_manager.get_or_create_user(user_id)
+                        if user_profile.preferred_difficulty:
+                            difficulty = user_profile.preferred_difficulty
+
+                    # Start the enhanced game
+                    game_session = await self.game_manager.start_game(
+                        channel_id=channel_id,
+                        user_id=user_id,
+                        difficulty=difficulty,
+                        timeout_duration=30,
+                        timeout_callback=lambda: self._handle_trivia_timeout(ctx),
+                        countdown_callback=lambda remaining: self._handle_countdown(
+                            ctx, remaining
+                        ),
+                    )
+
+                    if game_session:
+                        # Create and send question embed
+                        embed = await self._create_trivia_embed(game_session.question)
+                        message = await ctx.send(embed=embed)
+
+                        # Add reactions for multiple choice questions
+                        if game_session.question.question_type == "multiple_choice":
+                            reactions = ["🇦", "🇧", "🇨", "🇩"]
+                            for i, reaction in enumerate(
+                                reactions[: len(game_session.question.options)]
+                            ):
+                                await message.add_reaction(reaction)
+
+                        logger.info(
+                            f"Started enhanced trivia game for user {user_id} in channel {channel_id}"
+                        )
+                        return
+
+                except Exception as e:
+                    logger.warning(
+                        f"Enhanced trivia failed, falling back to simple mode: {e}"
+                    )
+
+            # Fallback to simple trivia (from basic trivia.py)
+            logger.info("Using simple trivia fallback")
+
+            # Initialize simple game tracking if not exists
+            if not hasattr(self, "active_games"):
+                self.active_games = {}
+
+            # Check if a game is already active in this channel
+            if channel_id in self.active_games:
                 embed = discord.Embed(
-                    title="🎮 Game Already Active",
-                    description="There's already a trivia game active in this channel! Finish it first.",
+                    title="🎮 Trivia Game Active",
+                    description="A trivia game is already active in this channel! Answer the current question first.",
                     color=discord.Color.orange(),
                 )
                 await ctx.send(embed=embed)
                 return
 
-            # Get user preferences if no difficulty specified
-            if not difficulty:
-                user_profile = await user_manager.get_or_create_user(user_id)
-                if user_profile.preferred_difficulty:
-                    difficulty = user_profile.preferred_difficulty
+            # Import questions from the basic system
+            from data.trivia_questions import ALL_QUESTIONS_FLAT
+            import random
 
-            # Start the game
-            game_session = await self.game_manager.start_game(
-                channel_id=channel_id,
-                user_id=user_id,
-                difficulty=difficulty,
-                timeout_duration=30,
-                timeout_callback=lambda: self._handle_trivia_timeout(ctx),
-                countdown_callback=lambda remaining: self._handle_countdown(
-                    ctx, remaining
-                ),
-            )
-
-            if not game_session:
+            if not ALL_QUESTIONS_FLAT:
                 embed = discord.Embed(
-                    title="❌ Failed to Start Game",
-                    description="Unable to start trivia game. Please try again.",
+                    title="❌ Trivia Unavailable",
+                    description="Sorry, trivia questions are not available right now. Please try again later.",
                     color=discord.Color.red(),
                 )
                 await ctx.send(embed=embed)
                 return
 
-            # Create and send question embed
-            embed = await self._create_trivia_embed(game_session.question)
+            # Filter for multiple choice questions only
+            multiple_choice_questions = [
+                q
+                for q in ALL_QUESTIONS_FLAT
+                if q.get("question_type") == "multiple_choice"
+            ]
+
+            if not multiple_choice_questions:
+                embed = discord.Embed(
+                    title="❌ Trivia Unavailable",
+                    description="Sorry, no multiple choice questions are available right now.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                return
+
+            # Select a random question
+            question_data = random.choice(multiple_choice_questions)
+
+            # Create Discord embed for the trivia question
+            embed = discord.Embed(
+                title="🏆 LA Galaxy Trivia",
+                description=question_data["question"],
+                color=0x00274C,  # LA Galaxy navy blue
+            )
+
+            # Add options as fields
+            options = question_data["options"]
+            option_letters = ["🇦", "🇧", "🇨", "🇩"]
+
+            for i, option in enumerate(options):
+                embed.add_field(
+                    name=f"{option_letters[i]} {chr(65 + i)}",
+                    value=option,
+                    inline=False,
+                )
+
+            embed.set_footer(text="React with 🇦, 🇧, 🇨, or 🇩 to answer!")
+
+            # Send the question
             message = await ctx.send(embed=embed)
 
-            # Add reactions for multiple choice questions
-            if game_session.question.question_type == "multiple_choice":
-                reactions = ["🇦", "🇧", "🇨", "🇩"]
-                for i, reaction in enumerate(
-                    reactions[: len(game_session.question.options)]
-                ):
-                    await message.add_reaction(reaction)
+            # Store the active game data
+            self.active_games[channel_id] = {
+                "message_id": message.id,
+                "correct_answer": question_data["correct_answer"],
+                "question": question_data["question"],
+                "options": options,
+            }
 
-            logger.info(
-                f"Started trivia game for user {user_id} in channel {channel_id}"
-            )
+            # Add reaction emojis for user interaction
+            try:
+                for emoji in option_letters:
+                    await message.add_reaction(emoji)
+                logger.info(
+                    f"Successfully started simple trivia game in channel {channel_id}"
+                )
+            except discord.Forbidden:
+                logger.error("Missing permissions to add reactions")
+                embed = discord.Embed(
+                    title="❌ Permission Error",
+                    description="I don't have permission to add reactions. Please ensure I have the 'Add Reactions' permission.",
+                    color=discord.Color.red(),
+                )
+                await ctx.send(embed=embed)
+                # Clean up the game since we can't add reactions
+                del self.active_games[channel_id]
 
         except Exception as e:
             logger.error(f"Error in trivia command: {e}", exc_info=True)
@@ -224,6 +328,79 @@ class EnhancedTriviaCog(commands.Cog):
             await ctx.send(embed=embed)
 
     # Note: achievements command is handled by achievement_commands.py cog
+
+    @commands.command(name="triviadebug", hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def trivia_debug(self, ctx):
+        """Debug trivia system status (admin only)."""
+        try:
+            embed = discord.Embed(
+                title="🔍 Enhanced Trivia Debug Info", color=discord.Color.blue()
+            )
+
+            # Show system mode
+            mode = (
+                "Enhanced"
+                if getattr(self, "enhanced_mode", False)
+                else "Simple Fallback"
+            )
+            embed.add_field(name="System Mode", value=mode, inline=True)
+
+            # Show component status
+            components = []
+            if hasattr(self, "question_engine") and self.question_engine:
+                components.append("✅ Question Engine")
+            else:
+                components.append("❌ Question Engine")
+
+            if hasattr(self, "game_manager") and self.game_manager:
+                components.append("✅ Game Manager")
+            else:
+                components.append("❌ Game Manager")
+
+            if hasattr(self, "challenge_system") and self.challenge_system:
+                components.append("✅ Challenge System")
+            else:
+                components.append("❌ Challenge System")
+
+            embed.add_field(name="Components", value="\n".join(components), inline=True)
+
+            # Show active games
+            active_games_info = "No active games"
+            if hasattr(self, "active_games") and self.active_games:
+                games_info = []
+                for channel_id, game_data in self.active_games.items():
+                    channel = self.bot.get_channel(channel_id)
+                    channel_name = channel.name if channel else f"Channel {channel_id}"
+                    games_info.append(f"• {channel_name}")
+                active_games_info = "\n".join(games_info)
+            elif hasattr(self, "game_manager") and self.game_manager:
+                active_games_info = "Enhanced game manager active"
+
+            embed.add_field(name="Active Games", value=active_games_info, inline=False)
+
+            # Show bot permissions
+            bot_member = ctx.guild.me
+            channel = ctx.channel
+            permissions = channel.permissions_for(bot_member)
+
+            perm_status = (
+                f"Add Reactions: {'✅' if permissions.add_reactions else '❌'}\n"
+            )
+            perm_status += (
+                f"Manage Messages: {'✅' if permissions.manage_messages else '❌'}\n"
+            )
+            perm_status += (
+                f"Send Messages: {'✅' if permissions.send_messages else '❌'}"
+            )
+
+            embed.add_field(name="Bot Permissions", value=perm_status, inline=False)
+
+            await ctx.send(embed=embed)
+
+        except Exception as e:
+            await ctx.send(f"❌ Debug error: {e}")
+            logger.error(f"Enhanced trivia debug error: {e}")
 
     @commands.command(name="triviareport", aliases=["report"])
     async def trivia_report(self, ctx):
@@ -701,34 +878,137 @@ class EnhancedTriviaCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        """Handle trivia answer reactions for both regular games and challenges."""
+        """Handle trivia answer reactions - simplified working version."""
         try:
             # Ignore bot reactions
             if user.bot:
                 return
 
             channel_id = reaction.message.channel.id
-            user_id = user.id
+            message_id = reaction.message.id
 
-            # Check if there's an active game in this channel
-            game_session = await self.game_manager.get_active_game(channel_id)
-            if not game_session:
-                return
-
-            # Process the reaction answer
-            result = await self.game_manager.process_reaction_answer(
-                channel_id, user_id, reaction, user
+            logger.info(
+                f"Reaction detected: {reaction.emoji} by {user.display_name} in channel {channel_id}"
             )
 
-            if result:
-                if game_session.is_challenge:
-                    await self._handle_challenge_result(
-                        reaction.message.channel, user, result, game_session
+            # First try the enhanced system if available
+            if hasattr(self, "game_manager") and self.game_manager:
+                try:
+                    game_session = await self.game_manager.get_active_game(channel_id)
+                    if game_session:
+                        # Process the reaction answer
+                        result = await self.game_manager.process_reaction_answer(
+                            channel_id, user.id, reaction, user
+                        )
+
+                        if result:
+                            if game_session.is_challenge:
+                                await self._handle_challenge_result(
+                                    reaction.message.channel, user, result, game_session
+                                )
+                            else:
+                                await self._handle_trivia_result(
+                                    reaction.message.channel, user, result, game_session
+                                )
+                        return
+                except Exception as e:
+                    logger.warning(
+                        f"Enhanced game manager failed, falling back to simple handler: {e}"
                     )
-                else:
-                    await self._handle_trivia_result(
-                        reaction.message.channel, user, result, game_session
-                    )
+
+            # Fallback to simple reaction handling (from basic trivia)
+            if not hasattr(self, "active_games"):
+                self.active_games = {}
+
+            # Check if this reaction is for an active trivia game
+            if channel_id not in self.active_games:
+                logger.info(f"No active game in channel {channel_id}")
+                return
+
+            game_data = self.active_games[channel_id]
+            logger.info(
+                f"Active game found, expected message ID: {game_data['message_id']}, got: {message_id}"
+            )
+
+            # Check if this is the correct message
+            if message_id != game_data["message_id"]:
+                logger.info(f"Message ID mismatch - ignoring reaction")
+                return
+
+            # Map emoji to answer index
+            emoji_to_index = {"🇦": 0, "🇧": 1, "🇨": 2, "🇩": 3}
+
+            # Check if the reaction is a valid answer option
+            if str(reaction.emoji) not in emoji_to_index:
+                return
+
+            user_answer = emoji_to_index[str(reaction.emoji)]
+            correct_answer = game_data["correct_answer"]
+
+            # Validate correct answer index
+            if not (0 <= correct_answer < len(game_data["options"])):
+                logger.error(f"Invalid correct answer index: {correct_answer}")
+                return
+
+            # Create response embed
+            if user_answer == correct_answer:
+                # Correct answer
+                embed = discord.Embed(
+                    title="🎉 Correct!",
+                    description=f"**{user.display_name}** got it right!",
+                    color=0x00FF00,  # Green
+                )
+                embed.add_field(
+                    name="Answer",
+                    value=f"🇦🇧🇨🇩"[correct_answer]
+                    + f" {game_data['options'][correct_answer]}",
+                    inline=False,
+                )
+                logger.info(
+                    f"User {user.display_name} answered trivia correctly in channel {channel_id}"
+                )
+            else:
+                # Incorrect answer
+                embed = discord.Embed(
+                    title="❌ Incorrect!",
+                    description=f"Sorry **{user.display_name}**, that's not right.",
+                    color=0xFF0000,  # Red
+                )
+                embed.add_field(
+                    name="Correct Answer",
+                    value=f"🇦🇧🇨🇩"[correct_answer]
+                    + f" {game_data['options'][correct_answer]}",
+                    inline=False,
+                )
+                logger.info(
+                    f"User {user.display_name} answered trivia incorrectly in channel {channel_id}"
+                )
+
+            # Send the result
+            try:
+                await reaction.message.channel.send(embed=embed)
+            except discord.Forbidden:
+                logger.error("Missing permissions to send messages in trivia channel")
+            except discord.HTTPException as e:
+                logger.error(f"Failed to send trivia result message: {e}")
+
+            # Clean up the completed game
+            del self.active_games[channel_id]
+            logger.info(f"Trivia game completed and cleaned up in channel {channel_id}")
+
+            # Clear reactions from the original message
+            try:
+                await reaction.message.clear_reactions()
+            except discord.Forbidden:
+                logger.warning(
+                    "Missing permissions to clear reactions from trivia message"
+                )
+            except discord.NotFound:
+                logger.warning(
+                    "Trivia message was deleted before reactions could be cleared"
+                )
+            except discord.HTTPException as e:
+                logger.warning(f"Failed to clear reactions from trivia message: {e}")
 
         except Exception as e:
             logger.error(f"Error handling reaction: {e}", exc_info=True)
@@ -1746,6 +2026,15 @@ class EnhancedTriviaCog(commands.Cog):
 
 
 async def setup(bot):
-    """Set up the enhanced trivia cog."""
-    await bot.add_cog(EnhancedTriviaCog(bot))
-    logger.info("EnhancedTriviaCog added to bot")
+    """Set up the enhanced trivia cog with robust fallback handling."""
+    try:
+        # Create the cog instance
+        cog = EnhancedTriviaCog(bot)
+
+        # Always add the cog - it will handle fallbacks internally
+        await bot.add_cog(cog)
+        logger.info("EnhancedTriviaCog added to bot (with fallback support)")
+
+    except Exception as e:
+        logger.error(f"Failed to add enhanced trivia cog: {e}")
+        raise  # Re-raise so the bot knows the cog failed to load
