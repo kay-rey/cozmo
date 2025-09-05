@@ -70,6 +70,75 @@ class StatsCog(commands.Cog):
             await ctx.send(f"❌ Failed to list commands: {e}")
             logger.error(f"Failed to list commands: {e}")
 
+    @commands.command(name="checkperms", hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def check_permissions(self, ctx: commands.Context):
+        """Check bot permissions in current channel (admin only)."""
+        try:
+            bot_member = ctx.guild.me
+            channel = ctx.channel
+            permissions = channel.permissions_for(bot_member)
+
+            # Required permissions for full functionality
+            required_perms = {
+                "send_messages": "Send Messages",
+                "read_message_history": "Read Message History",
+                "add_reactions": "Add Reactions",
+                "manage_messages": "Manage Messages (clear reactions)",
+                "use_slash_commands": "Use Slash Commands",
+                "embed_links": "Embed Links",
+                "attach_files": "Attach Files",
+            }
+
+            embed = discord.Embed(
+                title="🔐 Bot Permissions Check",
+                description=f"Checking permissions for {bot_member.mention} in {channel.mention}",
+                color=discord.Color.blue(),
+            )
+
+            # Check each required permission
+            missing_perms = []
+            granted_perms = []
+
+            for perm_name, display_name in required_perms.items():
+                has_perm = getattr(permissions, perm_name, False)
+                if has_perm:
+                    granted_perms.append(f"✅ {display_name}")
+                else:
+                    missing_perms.append(f"❌ {display_name}")
+
+            if granted_perms:
+                embed.add_field(
+                    name="✅ Granted Permissions",
+                    value="\n".join(granted_perms),
+                    inline=False,
+                )
+
+            if missing_perms:
+                embed.add_field(
+                    name="❌ Missing Permissions",
+                    value="\n".join(missing_perms),
+                    inline=False,
+                )
+                embed.color = discord.Color.orange()
+                embed.add_field(
+                    name="⚠️ Impact",
+                    value="Missing permissions may cause some bot features to not work properly. Please grant the missing permissions.",
+                    inline=False,
+                )
+            else:
+                embed.add_field(
+                    name="🎉 Status",
+                    value="All required permissions are granted! Bot should function normally.",
+                    inline=False,
+                )
+
+            await ctx.send(embed=embed)
+
+        except Exception as e:
+            await ctx.send(f"❌ Failed to check permissions: {e}")
+            logger.error(f"Failed to check permissions: {e}")
+
     @discord.app_commands.command(
         name="standings", description="Display MLS teams organized by conference"
     )

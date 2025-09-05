@@ -223,85 +223,7 @@ class EnhancedTriviaCog(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    @commands.command(name="achievements")
-    async def achievements(self, ctx, user: discord.Member = None):
-        """Display user achievements with dates."""
-        try:
-            from utils.achievement_system import achievement_system
-
-            target_user = user or ctx.author
-            user_id = target_user.id
-
-            # Get user achievements
-            user_achievements = await achievement_system.get_user_achievements(user_id)
-
-            if not user_achievements:
-                embed = discord.Embed(
-                    title="🏆 Achievements",
-                    description=f"**{target_user.display_name}** hasn't unlocked any achievements yet!\n\nPlay trivia to start earning achievements!",
-                    color=0xFFD700,
-                )
-                await ctx.send(embed=embed)
-                return
-
-            # Create achievements embed
-            embed = discord.Embed(
-                title="🏆 Achievements",
-                description=f"Achievements for **{target_user.display_name}**",
-                color=0xFFD700,
-            )
-
-            # Group achievements by category
-            categories = {}
-            for user_achievement in user_achievements:
-                if user_achievement.achievement:
-                    category = user_achievement.achievement.category
-                    if category not in categories:
-                        categories[category] = []
-                    categories[category].append(user_achievement)
-
-            # Add fields for each category
-            for category, achievements in categories.items():
-                achievement_text = ""
-                for ua in achievements[:5]:  # Limit to 5 per category
-                    if ua.achievement:
-                        date_str = ua.unlocked_at.strftime("%m/%d/%Y")
-                        achievement_text += (
-                            f"{ua.achievement.emoji} **{ua.achievement.name}**\n"
-                        )
-                        achievement_text += f"   _{ua.achievement.description}_\n"
-                        achievement_text += f"   Unlocked: {date_str}\n\n"
-
-                if achievement_text:
-                    embed.add_field(
-                        name=f"🎯 {category.title()}",
-                        value=achievement_text,
-                        inline=False,
-                    )
-
-            # Add summary
-            total_achievements = len(await achievement_system.get_all_achievements())
-            unlocked_count = len(user_achievements)
-            completion_percentage = (
-                (unlocked_count / total_achievements) * 100
-                if total_achievements > 0
-                else 0
-            )
-
-            embed.set_footer(
-                text=f"Progress: {unlocked_count}/{total_achievements} ({completion_percentage:.1f}%)"
-            )
-
-            await ctx.send(embed=embed)
-
-        except Exception as e:
-            logger.error(f"Error in achievements command: {e}", exc_info=True)
-            embed = discord.Embed(
-                title="❌ Something Went Wrong",
-                description="An error occurred while getting achievements. Please try again.",
-                color=discord.Color.red(),
-            )
-            await ctx.send(embed=embed)
+    # Note: achievements command is handled by achievement_commands.py cog
 
     @commands.command(name="triviareport", aliases=["report"])
     async def trivia_report(self, ctx):
@@ -932,8 +854,9 @@ class EnhancedTriviaCog(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    @commands.command(name="leaderboard", aliases=["lb", "top"])
-    async def leaderboard(self, ctx, period: str = "all"):
+    # @commands.command(name="leaderboard", aliases=["lb", "top"])
+    # Disabled - handled by leaderboard_commands.py cog
+    async def leaderboard_disabled(self, ctx, period: str = "all"):
         """Display the trivia leaderboard."""
         try:
             from utils.leaderboard_manager import leaderboard_manager
@@ -1018,8 +941,9 @@ class EnhancedTriviaCog(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    @commands.command(name="myrank", aliases=["rank"])
-    async def my_rank(self, ctx):
+    # @commands.command(name="myrank", aliases=["rank"])
+    # Disabled - handled by leaderboard_commands.py cog
+    async def my_rank_disabled(self, ctx):
         """Show user's current rank and nearby positions."""
         try:
             from utils.leaderboard_manager import leaderboard_manager

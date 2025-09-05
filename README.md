@@ -306,6 +306,20 @@ cozmo/
 - **API Access**: TheSportsDB account (free tier works great)
 - **Permissions**: Bot needs message & reaction permissions
 
+### Required Discord Permissions
+
+For full functionality, ensure your bot has these permissions:
+
+- ✅ **Send Messages** - Basic bot communication
+- ✅ **Read Message History** - Context for commands
+- ✅ **Add Reactions** - Trivia game interactions
+- ✅ **Manage Messages** - Clear reactions after trivia (prevents clutter)
+- ✅ **Use Slash Commands** - Modern Discord interface
+- ✅ **Embed Links** - Rich content display
+- ✅ **Attach Files** - Image support in trivia
+
+**Troubleshooting**: If you see "Missing permissions to clear reactions" warnings, grant the **Manage Messages** permission to fix this.
+
 ## 🚀 Deployment Options
 
 ### Local Development

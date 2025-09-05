@@ -15,6 +15,20 @@ Use this checklist to ensure a successful deployment of the Enhanced Trivia Syst
 - [ ] Data directories created (data/, data/backups/, logs/)
 - [ ] File permissions set correctly (600 for .env, 755 for scripts)
 
+### Discord Bot Permissions
+
+- [ ] Bot has been invited to server with correct permissions
+- [ ] **Required permissions verified**:
+  - [ ] Send Messages
+  - [ ] Read Message History
+  - [ ] Add Reactions
+  - [ ] **Manage Messages** (required for clearing reactions in trivia)
+  - [ ] Use Slash Commands
+  - [ ] Embed Links
+  - [ ] Attach Files (for images in trivia)
+- [ ] Bot role positioned correctly in server hierarchy
+- [ ] Channel-specific permissions configured if needed
+
 ### Code Preparation
 
 - [ ] Latest code pulled from repository
@@ -177,7 +191,7 @@ For non-critical issues:
 - [ ] Backup and recovery tested
 - [ ] Monitoring and alerting active
 
-**Technical Lead**: ********\_******** Date: ****\_****
+**Technical Lead**: **\*\*\*\***\_**\*\*\*\*** Date: \***\*\_\*\***
 
 ### Functional Sign-off
 
@@ -186,7 +200,7 @@ For non-critical issues:
 - [ ] No data loss detected
 - [ ] Performance acceptable to users
 
-**Product Owner**: ********\_******** Date: ****\_****
+**Product Owner**: **\*\*\*\***\_**\*\*\*\*** Date: \***\*\_\*\***
 
 ### Operations Sign-off
 
@@ -195,7 +209,7 @@ For non-critical issues:
 - [ ] Runbook updated
 - [ ] Support team briefed
 
-**Operations Lead**: ********\_******** Date: ****\_****
+**Operations Lead**: **\*\*\*\***\_**\*\*\*\*** Date: \***\*\_\*\***
 
 ## Post-Deployment Monitoring
 

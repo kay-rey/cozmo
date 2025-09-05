@@ -281,6 +281,7 @@ class TriviaCog(commands.Cog):
             await ctx.send(embed=embed)
 
 
-async def setup(bot):
-    await bot.add_cog(TriviaCog(bot))
-    logger.info("TriviaCog added to bot")
+# Temporarily disabled - using enhanced_trivia.py instead
+# async def setup(bot):
+#     await bot.add_cog(TriviaCog(bot))
+#     logger.info("TriviaCog added to bot")
