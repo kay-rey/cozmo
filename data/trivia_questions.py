@@ -6,6 +6,10 @@
 # Categories: "history", "players", "matches", "general", "stadium", "records"
 # Point Values: Easy: 10, Medium: 20, Hard: 30
 
+# Compatibility layer for old trivia system
+# Flattened list of all questions for backward compatibility
+ALL_QUESTIONS_FLAT = []
+
 QUESTIONS = {
     "easy": [
         # Easy Questions (10 points each)
@@ -540,3 +544,11 @@ QUESTIONS = {
         },
     ],
 }
+
+# Create flattened list for backward compatibility with old trivia system
+for difficulty_level in QUESTIONS.values():
+    ALL_QUESTIONS_FLAT.extend(difficulty_level)
+
+# For backward compatibility, also provide QUESTIONS as the flat list
+# This allows the old trivia system to continue working
+QUESTIONS_FLAT = ALL_QUESTIONS_FLAT

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import logging
-from data.trivia_questions import QUESTIONS
+from data.trivia_questions import QUESTIONS, ALL_QUESTIONS_FLAT
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +44,8 @@ class TriviaCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            # Flatten all questions from all difficulty levels
-            all_questions = []
-            for difficulty_level in QUESTIONS.values():
-                all_questions.extend(difficulty_level)
+            # Use the pre-flattened list for compatibility
+            all_questions = ALL_QUESTIONS_FLAT
 
             if not all_questions:
                 logger.error("No trivia questions found in any difficulty level")

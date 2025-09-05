@@ -71,6 +71,14 @@ class Config:
         if not value:
             self.logger.info(f"Optional environment variable {key} not set")
             return None
+
+        # Skip placeholder values
+        if value in ["your_news_channel_id_here", "your_channel_id_here"]:
+            self.logger.info(
+                f"Environment variable {key} contains placeholder value, skipping"
+            )
+            return None
+
         try:
             int_value = int(value)
             if int_value <= 0:
@@ -80,7 +88,9 @@ class Config:
                 return None
             return int_value
         except ValueError:
-            self.logger.warning(f"Invalid integer value for {key}: {value}")
+            self.logger.info(
+                f"Invalid integer value for {key}: {value} - treating as not set"
+            )
             return None
 
     def _validate_discord_token(self, token: str) -> bool:

@@ -5,8 +5,8 @@ Handles question selection, validation, and formatting for different question ty
 
 import random
 import re
-from typing import Optional, List, Dict, Any, Union
-from datetime import datetime, date
+from typing import Optional, List, Dict, Any
+from datetime import date
 from utils.models import Question, QUESTION_TYPES, DIFFICULTY_LEVELS, POINT_VALUES
 from data.trivia_questions import QUESTIONS
 

@@ -36,10 +36,9 @@ class EnhancedTriviaCog(commands.Cog):
 
             # Initialize question engine
             self.question_engine = QuestionEngine()
-            await self.question_engine.initialize()
 
             # Initialize game manager
-            self.game_manager = GameManager(self.question_engine)
+            self.game_manager = GameManager(self.question_engine, self.bot)
 
             # Initialize challenge system
             self.challenge_system = ChallengeSystem(self.question_engine, user_manager)
