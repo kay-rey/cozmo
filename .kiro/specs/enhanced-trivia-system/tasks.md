@@ -109,8 +109,8 @@
   - Create weekly challenge progress tracking and display
   - _Requirements: 6.3, 6.4_
 
-- [ ] 8. Build enhanced trivia cog with all new features
-- [ ] 8.1 Create EnhancedTriviaCog class structure
+- [x] 8. Build enhanced trivia cog with all new features
+- [x] 8.1 Create EnhancedTriviaCog class structure
 
   - Implement enhanced !trivia command with difficulty selection support
   - Create !triviastats command showing comprehensive user statistics
@@ -118,7 +118,7 @@
   - Implement !triviareport command with performance breakdown by category
   - _Requirements: 1.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 9.4_
 
-- [ ] 8.2 Implement admin commands and configuration
+- [x] 8.2 Implement admin commands and configuration
 
   - Create !triviaconfig command for viewing and updating trivia settings
   - Implement !resetstats command for administrator user statistics management
