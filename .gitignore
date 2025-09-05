@@ -237,7 +237,7 @@ $RECYCLE.BIN/
 .env.staging
 
 # Bot logs
-logs/
+logs/*.log
 *.log
 
 # Database files
@@ -249,6 +249,20 @@ logs/
 *.db-shm
 *.db-wal
 *.db-journal
+
+# Database backup files and metadata
+data/backups/*.db
+data/backups/*.db-shm
+data/backups/*.db-wal
+data/backups/*.db.meta
+data/backups/*.sqlite*
+data/*.db
+data/*.sqlite*
+
+# Runtime data files
+data/last_article.txt
+data/cache/
+data/temp/
 
 # Configuration files with secrets
 config.json
