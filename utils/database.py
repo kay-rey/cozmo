@@ -689,6 +689,52 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Backup cleanup failed: {e}")
 
+    async def close_all_connections(self):
+        """Close all connections in the pool."""
+        async with self._pool_lock:
+            while self._connection_pool:
+                conn = self._connection_pool.pop()
+                try:
+                    await conn.close()
+                except Exception as e:
+                    logger.warning(f"Error closing connection: {e}")
+        logger.info("All database connections closed")
+
+    async def get_database_stats(self) -> dict:
+        """Get database statistics for monitoring."""
+        try:
+            async with self.get_connection() as conn:
+                stats = {}
+
+                # Get table counts
+                tables = [
+                    "users",
+                    "questions",
+                    "user_achievements",
+                    "weekly_rankings",
+                    "game_sessions",
+                ]
+                for table in tables:
+                    cursor = await conn.execute(f"SELECT COUNT(*) FROM {table}")
+                    stats[f"{table}_count"] = (await cursor.fetchone())[0]
+
+                # Get database size info
+                cursor = await conn.execute("PRAGMA page_count")
+                page_count = (await cursor.fetchone())[0]
+                cursor = await conn.execute("PRAGMA page_size")
+                page_size = (await cursor.fetchone())[0]
+                stats["database_size_bytes"] = page_count * page_size
+
+                # Get schema version
+                cursor = await conn.execute("SELECT MAX(version) FROM schema_version")
+                stats["schema_version"] = (await cursor.fetchone())[0] or 0
+
+                return stats
+
+        except Exception as e:
+            logger.error(f"Failed to get database stats: {e}")
+            return {}
+
     async def restore_database(self, backup_path: str) -> bool:
         """Restore database from backup with verification."""
         try:

@@ -148,6 +148,17 @@ class BackupManager:
 
                     with open(meta_file, "r") as f:
                         metadata = json.load(f)
+                        # Convert created_at string back to datetime if needed
+                        if "created_at" in metadata and isinstance(
+                            metadata["created_at"], str
+                        ):
+                            try:
+                                metadata["created_at"] = datetime.fromisoformat(
+                                    metadata["created_at"]
+                                )
+                            except ValueError:
+                                # Keep the file timestamp if parsing fails
+                                pass
                         backup_info.update(metadata)
                 except Exception as e:
                     logger.warning(f"Failed to read metadata for {backup_file}: {e}")

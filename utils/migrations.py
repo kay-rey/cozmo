@@ -42,6 +42,12 @@ class MigrationManager:
         )
         await conn.commit()
 
+    async def _get_schema_version(self, conn: aiosqlite.Connection) -> int:
+        """Get the current schema version."""
+        cursor = await conn.execute("SELECT MAX(version) FROM schema_version")
+        result = await cursor.fetchone()
+        return result[0] if result[0] is not None else 0
+
     # Example migration method (for future use)
     async def _migrate_to_v2(self, conn: aiosqlite.Connection):
         """Example migration to version 2."""
