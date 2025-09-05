@@ -1,11 +1,13 @@
 services:
-  - type: web
+  - type: worker  # Changed from 'web' to 'worker'
     name: cozmo-discord-bot
-    runtime: python3
+    env: python   # Specifies the environment
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: python3 main.py
     plan: free
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: DISCORD_TOKEN
         sync: false
       - key: SPORTS_API_KEY
