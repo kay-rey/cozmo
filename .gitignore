@@ -245,6 +245,11 @@ logs/
 *.sqlite
 *.sqlite3
 
+# SQLite temporary files
+*.db-shm
+*.db-wal
+*.db-journal
+
 # Configuration files with secrets
 config.json
 secrets.json
