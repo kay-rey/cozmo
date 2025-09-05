@@ -150,7 +150,7 @@ class CozmoBot(commands.Bot):
 
 
 async def main():
-    """Main function to run the bot."""
+    """Main function to run the bot and health server."""
     # Set up comprehensive logging
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
@@ -174,12 +174,17 @@ async def main():
     logger = logging.getLogger(__name__)
     logger.info("Starting Cozmo Discord Bot...")
 
+    # Import health server
+    from health_server import run_health_server
+
     # Create and run the bot
     bot = CozmoBot()
 
     try:
-        logger.info("Attempting to connect to Discord...")
-        await bot.start(config.DISCORD_TOKEN)
+        logger.info("Starting health server and Discord bot...")
+
+        # Run both the health server and bot concurrently
+        await asyncio.gather(run_health_server(), bot.start(config.DISCORD_TOKEN))
     except KeyboardInterrupt:
         logger.info("Bot shutdown requested by user")
     except discord.LoginFailure as e:
