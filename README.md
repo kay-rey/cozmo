@@ -22,13 +22,28 @@
 - **`/lineup [match_id]`** - Display match lineups and starting XI
 - Clean, readable embeds that make stats actually enjoyable
 
-### 🧠 **Galaxy Trivia Challenge**
+### 🧠 **Enhanced Galaxy Trivia System**
 
-- **`!trivia`** - Test your Galaxy knowledge with 45+ challenging questions
-- Interactive emoji reactions (🇦 🇧 🇨 🇩) for seamless gameplay
-- Questions spanning three difficulty levels: easy, medium, and hard
-- Covers club history, players, matches, stadium, and records
-- Anti-spam protection ensures fair play
+#### **Basic Trivia**
+
+- **`!trivia [difficulty]`** - Start a trivia game with optional difficulty (easy/medium/hard)
+- Interactive emoji reactions (🇦 🇧 🇨 🇩) for multiple choice questions
+- Type answers for fill-in-the-blank questions
+- 45+ questions covering club history, players, matches, stadium, and records
+
+#### **Challenge System**
+
+- **`!dailychallenge`** or **`!daily`** - Daily challenge with **double points**
+- **`!weeklychallenge`** or **`!weekly`** - Weekly challenge with **triple points** (5 questions)
+- **`!challengeprogress`** or **`!progress`** - Check your challenge status
+
+#### **Statistics & Progress**
+
+- **`!triviastats [@user]`** or **`!stats [@user]`** - View comprehensive trivia statistics
+- **`!achievements [@user]`** - Display unlocked achievements with dates
+- **`!triviareport`** or **`!report`** - Detailed performance breakdown by category
+- **`!leaderboard [period]`** or **`!lb [period]`** - View top players (all/daily/weekly/monthly)
+- **`!myrank`** or **`!rank`** - See your current rank and nearby positions
 
 ### 🛡️ **Built Like a Tank**
 
@@ -66,6 +81,62 @@ python3 main.py
 
 _Watch for "Cozmo is online and ready to cheer for the Galaxy!" - that's your green light!_
 
+## 🎮 How to Play Enhanced Trivia
+
+### 🚀 **Getting Started**
+
+1. **Basic Trivia**: Type `!trivia` to start with a random difficulty question
+2. **Choose Difficulty**: Use `!trivia easy`, `!trivia medium`, or `!trivia hard`
+3. **Answer Questions**:
+   - **Multiple Choice**: React with 🇦, 🇧, 🇨, or 🇩
+   - **True/False**: React with ✅ (true) or ❌ (false)
+   - **Fill-in-the-Blank**: Type your answer in chat
+
+### 🏆 **Challenge System**
+
+#### **Daily Challenge**
+
+- Available once per day
+- **Double points** for correct answers
+- Harder questions (usually medium/hard difficulty)
+- Use `!daily` or `!dailychallenge`
+
+#### **Weekly Challenge**
+
+- Available once per week (resets Monday)
+- **5 questions** with **triple points**
+- Mix of medium and hard questions
+- Use `!weekly` or `!weeklychallenge`
+- Can be completed over multiple sessions
+
+### 📊 **Scoring & Progression**
+
+- **Easy Questions**: 10 points
+- **Medium Questions**: 20 points
+- **Hard Questions**: 30 points
+- **Daily Challenge**: 2x points
+- **Weekly Challenge**: 3x points
+- Build streaks for bonus achievements!
+
+### 🏅 **Achievements System**
+
+Unlock achievements by:
+
+- Answering questions correctly
+- Building answer streaks
+- Completing challenges
+- Reaching point milestones
+- Mastering specific categories
+
+View your achievements with `!achievements`
+
+### 📈 **Track Your Progress**
+
+- `!stats` - Overall performance and accuracy
+- `!report` - Detailed breakdown by category and difficulty
+- `!rank` - Your current leaderboard position
+- `!lb` - See top players (daily/weekly/monthly/all-time)
+
 ## 🎮 Command Arsenal
 
 ### Slash Commands (Modern Discord Interface)
@@ -79,11 +150,26 @@ _Watch for "Cozmo is online and ready to cheer for the Galaxy!" - that's your gr
 
 ### Prefix Commands (Classic Style)
 
+#### **Match & General Commands**
+
 | Command      | What It Does                           | Example      |
 | ------------ | -------------------------------------- | ------------ |
 | `!nextmatch` | Shows LA Galaxy's next scheduled match | `!nextmatch` |
-| `!trivia`    | Start an interactive trivia game       | `!trivia`    |
 | `!sync`      | Sync slash commands (owner only)       | `!sync`      |
+
+#### **Enhanced Trivia Commands**
+
+| Command                 | What It Does                                  | Example            |
+| ----------------------- | --------------------------------------------- | ------------------ |
+| `!trivia [difficulty]`  | Start trivia game (easy/medium/hard)          | `!trivia medium`   |
+| `!dailychallenge`       | Daily challenge (double points)               | `!daily`           |
+| `!weeklychallenge`      | Weekly challenge (triple points, 5 questions) | `!weekly`          |
+| `!triviastats [@user]`  | View trivia statistics                        | `!stats @username` |
+| `!achievements [@user]` | Display unlocked achievements                 | `!achievements`    |
+| `!triviareport`         | Performance breakdown by category             | `!report`          |
+| `!leaderboard [period]` | View leaderboard (all/daily/weekly/monthly)   | `!lb weekly`       |
+| `!myrank`               | Show your current rank                        | `!rank`            |
+| `!challengeprogress`    | Check challenge status                        | `!progress`        |
 
 ## 🔧 Configuration Deep Dive
 
