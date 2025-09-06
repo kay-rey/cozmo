@@ -170,11 +170,12 @@ class EnhancedTriviaCog(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            # Filter for supported question types (multiple choice and true/false)
+            # Filter for supported question types (multiple choice, true/false, and fill_blank)
             supported_questions = [
                 q
                 for q in ALL_QUESTIONS_FLAT
-                if q.get("question_type") in ["multiple_choice", "true_false"]
+                if q.get("question_type")
+                in ["multiple_choice", "true_false", "fill_blank"]
             ]
 
             if not supported_questions:
