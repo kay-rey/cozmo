@@ -983,6 +983,8 @@ class EnhancedTriviaCog(commands.Cog):
                 await ctx.send("⏰ 20 seconds remaining!")
             elif remaining == 10:
                 await ctx.send("⏰ 10 seconds remaining!")
+            elif remaining == 0:
+                await ctx.send("Time has run out!")
         except Exception as e:
             logger.error(f"Error in countdown handler: {e}")
 
