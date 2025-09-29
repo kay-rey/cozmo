@@ -200,96 +200,102 @@ cozmo/
 - **Data migration** - safe database migration strategies
 - **Rollback procedures** - ability to rollback deployments
 
-## 🔄 Git & Version Control
+## Commit Style Guidelines
 
-### Branch Strategy
+### Conventional Commits Format
 
-- **Main branch** - production-ready code only
-- **Feature branches** - one feature per branch
-- **Hotfix branches** - critical fixes for production
-- **Release branches** - prepare releases
-- **No direct commits** to main - use pull requests
+Always use conventional commits with the following structure:
 
-### Commit Message Format
-
-Use conventional commit format: `type(scope): description`
-
-**Types:**
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-- `perf`: Performance improvements
-- `ci`: CI/CD changes
-- `build`: Build system changes
-
-**Scopes:**
-
-- `api`: API-related changes
-- `cogs`: Discord command changes
-- `utils`: Utility function changes
-- `db`: Database changes
-- `config`: Configuration changes
-- `docker`: Docker-related changes
-- `tests`: Test-related changes
-- `docs`: Documentation changes
-
-**Examples:**
+**Title Format:**
 
 ```
-feat(trivia): add daily challenge system
-fix(api): handle ESPN API rate limiting
-docs(readme): update installation instructions
-refactor(database): optimize query performance
-test(cogs): add integration tests for stats commands
-chore(docker): update base image to Alpine 3.18
+<type>[optional scope]: <description>
 ```
 
-### Pull Request Guidelines
-
-- **Clear title** - descriptive PR title
-- **Detailed description** - explain changes and motivation
-- **Link issues** - reference related issues
-- **Screenshots** - include UI changes if applicable
-- **Test instructions** - how to test the changes
-- **Breaking changes** - document any breaking changes
-
-## 🎯 Commit Message Generation
-
-When you ask for a commit message, I will provide ONLY the commit message content in conventional commit format with separate title and description sections that you can copy and paste directly. No additional text or explanations.
-
-**Format:**
+**Description Format:**
 
 ```
-type(scope): short description
+[body]
 
-Longer description explaining what was changed and why.
-Can include multiple lines if needed.
+[optional footer(s)]
 ```
 
-**Examples:**
+### Commit Types
 
-**Title:** `feat(trivia): add weekly challenge with triple points`
-**Description:** `Implement weekly challenge system that allows users to complete 5 questions once per week with triple point rewards. Includes progress tracking and automatic reset on Mondays.`
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `chore`: Changes to the build process or auxiliary tools and libraries
+- `ci`: Changes to CI configuration files and scripts
+- `build`: Changes that affect the build system or external dependencies
+- `revert`: Reverts a previous commit
 
-**Title:** `fix(api): resolve ESPN API timeout issues`
-**Description:** `Add proper timeout handling and retry logic for ESPN API calls. Implement exponential backoff to handle rate limiting and network issues gracefully.`
+### Examples
 
-**Title:** `docs(readme): update Docker deployment instructions`
-**Description:** `Add comprehensive Docker deployment guide with multi-stage builds optimized for Raspberry Pi 2. Include health check configuration and resource limits.`
+**Title:**
 
-**Title:** `refactor(database): optimize user stats queries`
-**Description:** `Replace N+1 queries with single JOIN query for user statistics. Add database indexes for frequently accessed columns to improve performance.`
+```
+feat(pokemon): add shiny pokemon detection
+```
 
-**Title:** `test(cogs): add comprehensive trivia tests`
-**Description:** `Add unit and integration tests for trivia system covering all difficulty levels, scoring mechanics, and edge cases. Achieve 95% test coverage.`
+**Description:**
 
-**Title:** `chore(docker): update to Python 3.9 slim bullseye`
-**Description:** `Upgrade base image to python:3.9-slim-bullseye for optimal Raspberry Pi 2 compatibility and performance. Update all dependencies to compatible versions.`
+```
+Add functionality to detect and display shiny Pokemon variants in the card search results. This includes updating the Pokemon data model to include shiny status and modifying the search algorithm to highlight shiny cards.
+
+- Added shiny field to Pokemon data structure
+- Updated search results display to show shiny indicator
+- Added tests for shiny detection logic
+
+Closes #123
+```
+
+**Title:**
+
+```
+fix(bot): resolve command timeout issues
+```
+
+**Description:**
+
+```
+Fix timeout errors that occur when Discord commands take longer than 3 seconds to process. Implemented async command handling and added proper error handling for long-running operations.
+
+- Added async/await pattern for command execution
+- Implemented timeout handling with proper error messages
+- Added logging for command execution times
+
+Fixes #456
+```
+
+**Title:**
+
+```
+docs: update setup instructions for new dependencies
+```
+
+**Description:**
+
+```
+Update README.md with installation instructions for the new uv package manager and updated Python version requirements.
+
+- Added uv installation steps
+- Updated Python version requirement to 3.11+
+- Added troubleshooting section for common setup issues
+```
+
+### Important Notes
+
+- Keep the title under 50 characters
+- Use lowercase for the type and scope
+- Don't end the title with a period
+- Use the imperative mood ("add feature" not "added feature")
+- Provide the commit text in a format ready for copy-paste
+- Separate title and description clearly for easy copying
 
 ## 🚨 Error Handling & Recovery
 

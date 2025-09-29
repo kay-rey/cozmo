@@ -543,6 +543,7 @@ development/
 .Python
 pyvenv.cfg
 pip-selfcheck.json
+diff.txt
 
 # =============================================================================
 # PROJECT SPECIFIC PATTERNS
