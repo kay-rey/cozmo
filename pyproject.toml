@@ -1,7 +1,7 @@
 [project]
 name = "cozmo"
 version = "0.1.0"
-description = "Add your description here"
+description = "Cozmo - LA Galaxy Discord Bot providing game schedules, roster info, and player statistics for LA Galaxy fans"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.9"
 dependencies = []
