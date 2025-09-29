@@ -14,7 +14,6 @@ from api.sports_api import (
     get_match_lineup,
     SportsAPIError,
 )
-from api.espn_api import ESPNAPIError
 
 logger = logging.getLogger(__name__)
 

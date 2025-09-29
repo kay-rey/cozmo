@@ -1,0 +1,424 @@
+---
+alwaysApply: true
+---
+
+# Cozmo Discord Bot - Development Rules
+
+## 🎯 Project Overview
+
+Cozmo is a Discord bot for LA Galaxy fans providing match info, stats, news, and trivia. It's designed to run in a Docker container on a Raspberry Pi 2, following DRY principles and modern Python practices.
+
+## 🏗️ Architecture & Code Organization
+
+### DRY Principles (Don't Repeat Yourself)
+
+- **Extract common functionality** into utility functions in `utils/`
+- **Reuse database operations** through centralized database manager
+- **Share API clients** across cogs to avoid duplicate HTTP sessions
+- **Consolidate error handling** in base classes and decorators
+- **Create reusable embed templates** for consistent UI
+- **Abstract configuration** through centralized config management
+
+### File Structure Rules
+
+```
+cozmo/
+├── main.py                 # Bot entry point only
+├── config.py              # Centralized configuration
+├── health_server.py       # Health monitoring for deployment
+├── api/                   # External API integrations
+├── cogs/                  # Discord command modules
+├── utils/                 # Shared utilities and core logic
+├── data/                  # Static data and database files
+├── tests/                 # Test suite
+├── docs/                  # Documentation
+├── scripts/               # Utility scripts
+└── logs/                  # Runtime logs
+```
+
+### Module Organization
+
+- **One responsibility per module** - each file should have a single, clear purpose
+- **Cogs for Discord commands** - all Discord interactions go in `cogs/`
+- **Utils for business logic** - core functionality in `utils/`
+- **API for external services** - all external API calls in `api/`
+- **No circular imports** - maintain clear dependency hierarchy
+
+## 🐳 Docker & Raspberry Pi 2 Optimization
+
+### Resource Constraints
+
+- **Memory efficient** - minimize memory usage for Pi 2's limited RAM
+- **CPU optimized** - avoid blocking operations, use async/await
+- **Disk space conscious** - clean up logs and temporary files
+- **Network efficient** - cache API responses, minimize external calls
+
+### Docker Best Practices
+
+- **Multi-stage builds** - separate build and runtime environments
+- **Python 3.9 slim base** - use `python:3.9-slim-bullseye` for optimal Pi 2 compatibility
+- **Health checks** - implement proper health monitoring
+- **Graceful shutdown** - handle SIGTERM signals properly
+- **Volume mounts** - persist database and logs outside container
+
+### Performance Guidelines
+
+- **Async operations** - use `async`/`await` for all I/O operations
+- **Connection pooling** - reuse HTTP connections
+- **Lazy loading** - load cogs and data only when needed
+- **Memory monitoring** - track memory usage and clean up resources
+- **Rate limiting** - respect API limits and implement backoff strategies
+
+## 🐍 Python Code Standards
+
+### Code Style
+
+- **Follow PEP 8** - use Black formatter for consistency
+- **Type hints** - use type annotations for all function parameters and returns
+- **Docstrings** - document all public functions and classes
+- **Error handling** - use specific exception types, not bare `except:`
+- **Logging** - use structured logging with appropriate levels
+
+### Async Programming
+
+- **Always use async/await** for I/O operations
+- **Use asyncio.gather()** for concurrent operations
+- **Proper exception handling** in async functions
+- **Resource cleanup** in finally blocks or context managers
+- **Avoid blocking operations** in async functions
+
+### Database Operations
+
+- **Use aiosqlite** for async database operations
+- **Connection pooling** - reuse database connections
+- **Transaction management** - use proper transaction boundaries
+- **Error handling** - handle database errors gracefully
+- **Migrations** - version control database schema changes
+
+## 🧪 Testing & Quality Assurance
+
+### Test Structure
+
+- **Unit tests** - test individual functions and methods
+- **Integration tests** - test component interactions
+- **End-to-end tests** - test complete user workflows
+- **Mock external APIs** - don't make real API calls in tests
+- **Test data isolation** - use separate test database
+
+### Test Coverage
+
+- **Minimum 80% coverage** for core functionality
+- **Test error conditions** - ensure proper error handling
+- **Test edge cases** - handle boundary conditions
+- **Test async code** - use pytest-asyncio for async tests
+- **Test database operations** - verify data integrity
+
+### Quality Gates
+
+- **All tests must pass** before merging
+- **No linting errors** - use flake8 or similar
+- **Type checking** - use mypy for static type checking
+- **Security scanning** - check for vulnerabilities
+- **Performance testing** - ensure acceptable response times
+
+## 🔒 Security & Best Practices
+
+### Environment Variables
+
+- **Never commit secrets** - use `.env` files and environment variables
+- **Validate configuration** - check required variables at startup
+- **Use secure defaults** - fail safely when configuration is missing
+- **Rotate secrets** - implement secret rotation strategies
+- **Environment separation** - different configs for dev/staging/prod
+
+### API Security
+
+- **Rate limiting** - implement proper rate limiting
+- **Input validation** - validate all user inputs
+- **SQL injection prevention** - use parameterized queries
+- **XSS prevention** - sanitize user-generated content
+- **CSRF protection** - validate request origins
+
+### Discord Bot Security
+
+- **Minimal permissions** - only request necessary Discord permissions
+- **User input sanitization** - clean all user-provided data
+- **Command validation** - validate command parameters
+- **Error message sanitization** - don't expose internal details
+- **Audit logging** - log security-relevant events
+
+### Discord API & Documentation
+
+- **Always refer to official docs** - use [Discord Developer Portal](https://discord.com/developers/docs) as the primary source
+- **Follow Discord.py documentation** - reference [discord.py documentation](https://discordpy.readthedocs.io/) for implementation details
+- **Stay updated** - Discord API changes frequently, always check for breaking changes
+- **Use official examples** - prefer Discord's official code examples over third-party tutorials
+- **API versioning** - be aware of Discord API version changes and deprecations
+- **Rate limiting** - follow Discord's rate limit guidelines from official documentation
+
+## 📝 Documentation Standards
+
+### Code Documentation
+
+- **Docstrings** - document all public functions, classes, and methods
+- **Type hints** - use type annotations for better IDE support
+- **Comments** - explain complex logic and business rules
+- **README updates** - keep README current with new features
+- **API documentation** - document external API integrations
+
+### Commit Documentation
+
+- **Conventional commits** - use standardized commit message format
+- **Clear descriptions** - explain what and why, not just what
+- **Reference issues** - link to GitHub issues when applicable
+- **Breaking changes** - clearly mark breaking changes
+- **Scope indicators** - specify which component is affected
+
+## 🚀 Deployment & Operations
+
+### Docker Configuration
+
+- **Multi-stage builds** - optimize image size
+- **Health checks** - implement proper health monitoring
+- **Resource limits** - set appropriate memory and CPU limits
+- **Volume mounts** - persist data outside container
+- **Environment variables** - use env files for configuration
+
+### Monitoring & Logging
+
+- **Structured logging** - use JSON format for logs
+- **Log levels** - appropriate use of DEBUG, INFO, WARNING, ERROR
+- **Health endpoints** - implement health check endpoints
+- **Metrics collection** - track performance metrics
+- **Error alerting** - notify on critical errors
+
+### Backup & Recovery
+
+- **Database backups** - regular automated backups
+- **Configuration backups** - version control configuration
+- **Disaster recovery** - documented recovery procedures
+- **Data migration** - safe database migration strategies
+- **Rollback procedures** - ability to rollback deployments
+
+## 🔄 Git & Version Control
+
+### Branch Strategy
+
+- **Main branch** - production-ready code only
+- **Feature branches** - one feature per branch
+- **Hotfix branches** - critical fixes for production
+- **Release branches** - prepare releases
+- **No direct commits** to main - use pull requests
+
+### Commit Message Format
+
+Use conventional commit format: `type(scope): description`
+
+**Types:**
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+- `perf`: Performance improvements
+- `ci`: CI/CD changes
+- `build`: Build system changes
+
+**Scopes:**
+
+- `api`: API-related changes
+- `cogs`: Discord command changes
+- `utils`: Utility function changes
+- `db`: Database changes
+- `config`: Configuration changes
+- `docker`: Docker-related changes
+- `tests`: Test-related changes
+- `docs`: Documentation changes
+
+**Examples:**
+
+```
+feat(trivia): add daily challenge system
+fix(api): handle ESPN API rate limiting
+docs(readme): update installation instructions
+refactor(database): optimize query performance
+test(cogs): add integration tests for stats commands
+chore(docker): update base image to Alpine 3.18
+```
+
+### Pull Request Guidelines
+
+- **Clear title** - descriptive PR title
+- **Detailed description** - explain changes and motivation
+- **Link issues** - reference related issues
+- **Screenshots** - include UI changes if applicable
+- **Test instructions** - how to test the changes
+- **Breaking changes** - document any breaking changes
+
+## 🎯 Commit Message Generation
+
+When you ask for a commit message, I will provide ONLY the commit message content in conventional commit format with separate title and description sections that you can copy and paste directly. No additional text or explanations.
+
+**Format:**
+
+```
+type(scope): short description
+
+Longer description explaining what was changed and why.
+Can include multiple lines if needed.
+```
+
+**Examples:**
+
+**Title:** `feat(trivia): add weekly challenge with triple points`
+**Description:** `Implement weekly challenge system that allows users to complete 5 questions once per week with triple point rewards. Includes progress tracking and automatic reset on Mondays.`
+
+**Title:** `fix(api): resolve ESPN API timeout issues`
+**Description:** `Add proper timeout handling and retry logic for ESPN API calls. Implement exponential backoff to handle rate limiting and network issues gracefully.`
+
+**Title:** `docs(readme): update Docker deployment instructions`
+**Description:** `Add comprehensive Docker deployment guide with multi-stage builds optimized for Raspberry Pi 2. Include health check configuration and resource limits.`
+
+**Title:** `refactor(database): optimize user stats queries`
+**Description:** `Replace N+1 queries with single JOIN query for user statistics. Add database indexes for frequently accessed columns to improve performance.`
+
+**Title:** `test(cogs): add comprehensive trivia tests`
+**Description:** `Add unit and integration tests for trivia system covering all difficulty levels, scoring mechanics, and edge cases. Achieve 95% test coverage.`
+
+**Title:** `chore(docker): update to Python 3.9 slim bullseye`
+**Description:** `Upgrade base image to python:3.9-slim-bullseye for optimal Raspberry Pi 2 compatibility and performance. Update all dependencies to compatible versions.`
+
+## 🚨 Error Handling & Recovery
+
+### Error Categories
+
+- **User errors** - invalid input, missing permissions
+- **API errors** - external service failures
+- **System errors** - database, network, configuration issues
+- **Discord errors** - rate limits, permission issues
+
+### Error Handling Strategy
+
+- **Graceful degradation** - continue operation when possible
+- **User-friendly messages** - clear error messages for users
+- **Detailed logging** - comprehensive error logging for debugging
+- **Retry mechanisms** - automatic retry for transient failures
+- **Circuit breakers** - prevent cascade failures
+
+### Recovery Procedures
+
+- **Automatic recovery** - self-healing mechanisms
+- **Manual intervention** - documented recovery procedures
+- **Monitoring alerts** - notify on critical errors
+- **Rollback procedures** - quick rollback for critical issues
+- **Post-mortem analysis** - learn from failures
+
+## 📊 Performance & Optimization
+
+### Performance Targets
+
+- **Response time** - < 2 seconds for most commands
+- **Memory usage** - < 512MB on Raspberry Pi 2
+- **CPU usage** - < 50% average load
+- **Database queries** - < 100ms for simple queries
+- **API calls** - < 5 seconds timeout
+
+### Optimization Strategies
+
+- **Caching** - cache frequently accessed data
+- **Connection pooling** - reuse database and HTTP connections
+- **Lazy loading** - load data only when needed
+- **Batch operations** - group related operations
+- **Async operations** - use async/await for I/O
+
+### Monitoring
+
+- **Performance metrics** - track response times and resource usage
+- **Error rates** - monitor error frequency and types
+- **User activity** - track command usage and patterns
+- **System health** - monitor memory, CPU, and disk usage
+- **API health** - monitor external service availability
+
+## 🔧 Development Workflow
+
+### Local Development
+
+1. **Create feature branch** from main
+2. **Make changes** following coding standards
+3. **Write tests** for new functionality
+4. **Run tests** and ensure they pass
+5. **Update documentation** if needed
+6. **Create pull request** with clear description
+7. **Code review** and address feedback
+8. **Merge** after approval
+
+### Testing Workflow
+
+1. **Unit tests** - test individual components
+2. **Integration tests** - test component interactions
+3. **End-to-end tests** - test complete workflows
+4. **Performance tests** - ensure acceptable performance
+5. **Security tests** - check for vulnerabilities
+6. **Manual testing** - verify user experience
+
+### Deployment Workflow
+
+1. **Build Docker image** with latest changes
+2. **Test in staging** environment
+3. **Deploy to production** with health checks
+4. **Monitor deployment** for issues
+5. **Rollback if needed** using documented procedures
+6. **Post-deployment verification** - confirm functionality
+
+## 🎯 Feature Development Guidelines
+
+### New Feature Checklist
+
+- [ ] **Requirements analysis** - understand the problem
+- [ ] **Design review** - plan the implementation
+- [ ] **Code implementation** - follow coding standards
+- [ ] **Test coverage** - write comprehensive tests
+- [ ] **Documentation** - update relevant docs
+- [ ] **Performance testing** - ensure acceptable performance
+- [ ] **Security review** - check for vulnerabilities
+- [ ] **User testing** - verify user experience
+- [ ] **Deployment** - deploy to production
+- [ ] **Monitoring** - track feature usage and performance
+
+### Code Review Checklist
+
+- [ ] **Functionality** - does it work as expected?
+- [ ] **Code quality** - follows coding standards
+- [ ] **Performance** - efficient implementation
+- [ ] **Security** - no security vulnerabilities
+- [ ] **Testing** - adequate test coverage
+- [ ] **Documentation** - clear and complete
+- [ ] **Error handling** - proper error management
+- [ ] **Logging** - appropriate logging levels
+- [ ] **Configuration** - uses config system properly
+- [ ] **Dependencies** - no unnecessary dependencies
+
+## 🚀 Continuous Improvement
+
+### Regular Reviews
+
+- **Code quality** - monthly code quality reviews
+- **Performance** - quarterly performance analysis
+- **Security** - regular security assessments
+- **Documentation** - keep documentation current
+- **Dependencies** - regular dependency updates
+
+### Learning & Growth
+
+- **Stay updated** - follow Python and Discord.py updates
+- **Best practices** - adopt new best practices
+- **Community feedback** - listen to user feedback
+- **Performance optimization** - continuous performance improvements
+- **Feature enhancement** - regular feature updates
+
+---
+
+**Remember:** This bot runs on a Raspberry Pi 2 with limited resources. Always consider performance, memory usage, and efficiency in every decision. Follow DRY principles to reduce code duplication and maintain a clean, maintainable codebase.
