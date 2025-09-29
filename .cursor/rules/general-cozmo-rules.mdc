@@ -6,7 +6,7 @@ alwaysApply: true
 
 ## 🎯 Project Overview
 
-Cozmo is a Discord bot for LA Galaxy fans providing match info, stats, news, and trivia. It's designed to run in a Docker container on a Raspberry Pi 2, following DRY principles and modern Python practices.
+Cozmo is a Discord bot for LA Galaxy fans providing match info, stats, news, and trivia. It's designed to run in a Docker container on a Raspberry Pi 2, following DRY principles and modern Python practices. The project uses **UV** as the package manager for fast, reliable dependency management.
 
 ## 🏗️ Architecture & Code Organization
 
@@ -78,6 +78,16 @@ cozmo/
 - **Docstrings** - document all public functions and classes
 - **Error handling** - use specific exception types, not bare `except:`
 - **Logging** - use structured logging with appropriate levels
+
+### UV Package Manager
+
+- **Use UV for all dependencies** - never use pip directly
+- **Lock file management** - always commit `uv.lock` for reproducible builds
+- **Dependency updates** - use `uv lock --upgrade` to update dependencies
+- **Virtual environment** - UV manages virtual environments automatically
+- **Project configuration** - use `pyproject.toml` for project settings
+- **Installation commands** - use `uv add <package>` for new dependencies
+- **Running scripts** - use `uv run python script.py` for execution
 
 ### Async Programming
 
