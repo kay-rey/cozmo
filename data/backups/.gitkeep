@@ -1,2 +1,0 @@
-# This file ensures the backups directory is tracked by git
-# Database backup files themselves should be ignored via .gitignore
