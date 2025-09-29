@@ -48,9 +48,8 @@ cozmo/
 │   ├── players.py        # Player info commands
 │   └── admin.py          # Admin commands
 ├── data/                  # Data storage
-│   ├── players.json      # Player database
-│   ├── schedule.json     # Game schedule
-│   └── team_info.json    # Team information
+│   ├── cozmo.db         # SQLite database
+│   └── migrations/       # Database schema migrations
 ├── utils/                 # Utility functions
 │   ├── __init__.py
 │   ├── api_client.py     # External API interactions
@@ -71,9 +70,10 @@ cozmo/
 - **Core**: Python 3.9+ (Pi 2 compatible)
 - **Discord**: discord.py 2.3+
 - **HTTP Client**: aiohttp
-- **Data Storage**: JSON files (lightweight for Pi 2)
+- **Database**: SQLite (lightweight, serverless)
+- **Database ORM**: SQLAlchemy with async support
 - **Caching**: Built-in memory cache
-- **Container**: Docker with Alpine Linux base
+- **Container**: Docker with Bullseye Slim base
 
 ---
 
@@ -134,12 +134,14 @@ cozmo/
 
 ### Data Management Strategy
 
+- **Database**: SQLite for persistent storage
 - **Caching**: Store data locally to reduce API calls
 - **Refresh Schedule**: Update data every 6 hours
-- **Fallback Chain**: ESPN API → LA Galaxy Website → Cached Data
+- **Fallback Chain**: ESPN API → LA Galaxy Website → Database Cache
 - **Error Handling**: Graceful degradation when sources fail
 - **Rate Limiting**: Respect ESPN's unofficial API limits
 - **Data Validation**: Verify data integrity from multiple sources
+- **Migrations**: Version-controlled database schema changes
 
 ### ESPN API Endpoints
 
@@ -341,9 +343,10 @@ CACHE_TTL=21600
 ### Key Decisions Made
 
 - **Python over Node.js**: Better for Pi 2 resource constraints
-- **JSON over Database**: Simpler for initial implementation
+- **SQLite over JSON**: Better data integrity and querying capabilities
 - **Slash Commands**: Modern Discord interaction method
 - **Modular Architecture**: Easy to maintain and extend
+- **Bullseye Slim over Alpine**: Better compatibility for Pi 2
 
 ### Potential Challenges
 
