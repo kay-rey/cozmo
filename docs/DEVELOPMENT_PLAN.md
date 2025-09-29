@@ -11,34 +11,21 @@
 
 ---
 
-## 📋 Phase 1: Core Features & Commands
+## 📋 Phase 1: Project Foundation & Structure
 
-### Primary Slash Commands
+### Project Setup
 
-1. **`/nextgame`** - Shows upcoming LA Galaxy match
+- Complete directory structure creation
+- Development environment configuration
+- Docker setup for development
+- Environment variables and configuration
 
-   - Date, time, opponent, venue
-   - Countdown timer
+### Basic Infrastructure
 
-2. **`/roster`** - Displays current team roster
-
-   - Player names, positions, jersey numbers
-   - Optional: stats, age, nationality
-   - Filtering options (by position, etc.)
-
-3. **`/player [name]`** - Detailed player information
-   - Basic info (position, number, age, nationality)
-   - Current season stats
-   - Career highlights
-   - Recent performance
-
-### Secondary Commands (Future phases)
-
-4. **`/lastgame`** - Previous match results
-5. **`/standings`** - Current MLS standings
-6. **`/news`** - Latest LA Galaxy news
-7. **`/schedule`** - Full season schedule
-8. **`/stats`** - Team statistics
+- Python environment with dependencies
+- Docker containerization
+- Logging and error handling framework
+- Basic Discord bot connection
 
 ---
 
@@ -90,48 +77,92 @@ cozmo/
 
 ---
 
-## 🔌 Phase 3: Data Sources & APIs
+## 🤖 Phase 3: Core Bot Features & Commands
+
+### Primary Slash Commands
+
+1. **`/nextgame`** - Shows upcoming LA Galaxy match
+
+   - Date, time, opponent, venue
+   - Countdown timer
+
+2. **`/roster`** - Displays current team roster
+
+   - Player names, positions, jersey numbers
+   - Optional: stats, age, nationality
+   - Filtering options (by position, etc.)
+
+3. **`/player [name]`** - Detailed player information
+   - Basic info (position, number, age, nationality)
+   - Current season stats
+   - Career highlights
+   - Recent performance
+
+### Secondary Commands (Future phases)
+
+4. **`/lastgame`** - Previous match results
+5. **`/standings`** - Current MLS standings
+6. **`/news`** - Latest LA Galaxy news
+7. **`/schedule`** - Full season schedule
+8. **`/stats`** - Team statistics
+
+---
+
+## 🔌 Phase 4: Data Sources & APIs
 
 ### Primary Data Sources
 
-1. **MLS API** (if available)
+1. **ESPN Unofficial API** (Primary)
 
-   - Official league data
-   - Real-time updates
-   - Most reliable source
+   - Base URL: `https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/`
+   - LA Galaxy Team ID: `187` or `los`
+   - Real-time scores, schedules, roster data
+   - Most comprehensive and reliable source
+   - **Note**: Unofficial API - may change without notice
 
-2. **LA Galaxy Official Website**
+2. **LA Galaxy Official Website** (Fallback)
 
    - Web scraping for roster/schedule
-   - Fallback when API unavailable
    - Player photos and bios
+   - Backup when ESPN API fails
+   - More detailed player information
 
-3. **Sports Reference APIs**
-   - ESPN, The Athletic, etc.
-   - Player statistics
-   - Historical data
+3. **Additional Sports APIs** (Secondary)
+   - The Athletic, Sports Reference
+   - Player statistics and historical data
+   - News and analysis content
 
 ### Data Management Strategy
 
 - **Caching**: Store data locally to reduce API calls
 - **Refresh Schedule**: Update data every 6 hours
-- **Fallback Chain**: API → Web Scraping → Cached Data
+- **Fallback Chain**: ESPN API → LA Galaxy Website → Cached Data
 - **Error Handling**: Graceful degradation when sources fail
+- **Rate Limiting**: Respect ESPN's unofficial API limits
+- **Data Validation**: Verify data integrity from multiple sources
+
+### ESPN API Endpoints
+
+- **Team Info**: `/teams/187` or `/teams/los`
+- **Schedule**: `/teams/187/schedule`
+- **Roster**: `/teams/187/roster`
+- **Scores**: `/scoreboard`
+- **Standings**: `/standings`
 
 ---
 
-## 🐳 Phase 4: Docker & Raspberry Pi 2 Optimization
+## 🐳 Phase 5: Docker & Raspberry Pi 2 Optimization
 
 ### Docker Configuration
 
 ```dockerfile
 # Multi-stage build for size optimization
-FROM python:3.9-alpine AS builder
+FROM python:3.9-slim-bullseye AS builder
 # Build dependencies
 
-FROM python:3.9-alpine AS runtime
-# Minimal runtime environment
-# ~50MB final image size
+FROM python:3.9-slim-bullseye AS runtime
+# Minimal runtime environment optimized for Raspberry Pi 2
+# ~100MB final image size
 ```
 
 ### Pi 2 Optimizations
@@ -151,7 +182,7 @@ FROM python:3.9-alpine AS runtime
 
 ---
 
-## 🔒 Phase 5: Security & Configuration
+## 🔒 Phase 6: Security & Configuration
 
 ### Environment Variables
 
@@ -173,7 +204,7 @@ CACHE_TTL=21600
 
 ---
 
-## 🧪 Phase 6: Testing Strategy
+## 🧪 Phase 7: Testing Strategy
 
 ### Test Categories
 
@@ -192,7 +223,7 @@ CACHE_TTL=21600
 
 ---
 
-## 📊 Phase 7: Monitoring & Maintenance
+## 📊 Phase 8: Monitoring & Maintenance
 
 ### Logging Strategy
 
@@ -210,7 +241,7 @@ CACHE_TTL=21600
 
 ---
 
-## 🚀 Phase 8: Deployment Plan
+## 🚀 Phase 9: Deployment Plan
 
 ### Development Workflow
 
@@ -229,7 +260,7 @@ CACHE_TTL=21600
 
 ---
 
-## 📈 Phase 9: Future Enhancements
+## 📈 Phase 10: Future Enhancements
 
 ### Advanced Features
 
@@ -250,29 +281,40 @@ CACHE_TTL=21600
 
 ## ⏱️ Development Timeline
 
-### Week 1-2: Foundation
+### Week 1: Project Foundation
 
-- [ ] Project setup and basic bot structure
-- [ ] Core slash command framework
-- [ ] Basic data models
+- [ ] Set up complete project structure (all directories and files)
+- [ ] Configure development environment (Python, dependencies)
+- [ ] Create basic Docker setup for development
+- [ ] Set up environment variables and configuration
+
+### Week 2: Basic Bot Framework
+
+- [ ] Implement basic Discord bot connection
+- [ ] Create core slash command framework
+- [ ] Set up logging and error handling
+- [ ] Test bot connectivity in Docker container
 
 ### Week 3-4: Core Features
 
 - [ ] Implement `/nextgame`, `/roster`, `/player` commands
-- [ ] Data source integration
-- [ ] Basic error handling
+- [ ] Create data models and JSON storage
+- [ ] Implement basic data fetching (mock data initially)
+- [ ] Test all commands in Docker environment
 
-### Week 5-6: Optimization
+### Week 5-6: Data Integration
 
-- [ ] Docker containerization
-- [ ] Pi 2 optimization
-- [ ] Performance testing
+- [ ] Integrate real data sources (APIs/web scraping)
+- [ ] Implement caching system
+- [ ] Add error handling and fallbacks
+- [ ] Optimize for Pi 2 performance
 
 ### Week 7-8: Polish & Deploy
 
-- [ ] Testing and bug fixes
-- [ ] Documentation
-- [ ] Production deployment
+- [ ] Comprehensive testing and bug fixes
+- [ ] Performance optimization
+- [ ] Documentation completion
+- [ ] Production deployment to Pi 2
 
 ---
 
@@ -312,11 +354,11 @@ CACHE_TTL=21600
 
 ### Next Steps
 
-1. Set up development environment
-2. Create basic bot structure
-3. Implement first slash command
-4. Test on local machine
-5. Begin Docker containerization
+1. **Set up complete project structure** - Create all directories and placeholder files
+2. **Configure development environment** - Install dependencies and set up Python environment
+3. **Create basic Docker setup** - Dockerfile and docker-compose for development
+4. **Implement basic bot connection** - Get Discord bot connected and responding
+5. **Test everything in Docker** - Ensure all development happens in containerized environment
 
 ---
 
