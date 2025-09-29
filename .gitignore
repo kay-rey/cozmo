@@ -85,8 +85,6 @@ target/
 profile_default/
 ipython_config.py
 
-# pyenv
-.python-version
 
 # pipenv
 Pipfile.lock
@@ -117,7 +115,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.python-version
 
 # Spyder project settings
 .spyderproject
@@ -468,7 +465,6 @@ known_hosts
 *.pid
 *.seed
 *.pid.lock
-*.lock
 
 # Backup files
 *.bak

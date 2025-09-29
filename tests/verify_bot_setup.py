@@ -5,7 +5,6 @@ Verifies that the bot can be initialized and all components are ready.
 """
 
 import sys
-import os
 from pathlib import Path
 
 
@@ -31,7 +30,7 @@ def check_dependencies():
 
     if missing:
         print(f"\nMissing dependencies: {', '.join(missing)}")
-        print("Install with: pip install -r requirements.txt")
+        print("Install with: uv sync")
         return False
 
     return True
@@ -87,7 +86,7 @@ def check_project_structure():
     required_files = [
         "main.py",
         "config.py",
-        "requirements.txt",
+        "pyproject.toml",
         "api/__init__.py",
         "api/sports_api.py",
         "api/news_api.py",
@@ -149,9 +148,7 @@ def main():
     if passed == total:
         print("🎉 Bot setup is complete and ready to run!")
         print("\nTo start the bot:")
-        print(
-            "1. Make sure all dependencies are installed: pip install -r requirements.txt"
-        )
+        print("1. Make sure all dependencies are installed: uv sync")
         print("2. Configure your .env file with real values")
         print("3. Run: python3 main.py")
         return True

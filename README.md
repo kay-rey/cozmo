@@ -57,7 +57,11 @@
 ### 1. **Get Your Dependencies**
 
 ```bash
-pip install -r requirements.txt
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies and create virtual environment
+uv sync
 ```
 
 ### 2. **Set Up Your Environment**
@@ -70,16 +74,45 @@ cp .env.template .env
 ### 3. **Test Everything Works**
 
 ```bash
-python3 tests/verify_bot_setup.py
+uv run python tests/verify_bot_setup.py
 ```
 
 ### 4. **Launch Cozmo!**
 
 ```bash
-python3 main.py
+uv run python main.py
 ```
 
 _Watch for "Cozmo is online and ready to cheer for the Galaxy!" - that's your green light!_
+
+## 🚀 Why uv?
+
+This project now uses [uv](https://docs.astral.sh/uv/) - an extremely fast Python package manager written in Rust. Here's why:
+
+- **⚡ 10-100x faster** than pip for dependency resolution and installation
+- **🔒 Reproducible builds** with `uv.lock` ensuring consistent environments
+- **📦 All-in-one tool** replacing pip, pip-tools, pipx, poetry, pyenv, and more
+- **🛠️ Better project management** with `pyproject.toml` configuration
+- **💾 Disk efficient** with global caching and dependency deduplication
+
+### Common uv Commands
+
+```bash
+# Install dependencies
+uv sync
+
+# Add a new dependency
+uv add package-name
+
+# Run Python scripts
+uv run python script.py
+
+# Run tests
+uv run python -m pytest
+
+# Update dependencies
+uv lock --upgrade
+```
 
 ## 🎮 How to Play Enhanced Trivia
 
@@ -255,7 +288,8 @@ cozmo/
 ├── 🤖 main.py                    # Bot brain & startup logic
 ├── ⚙️ config.py                  # Environment & configuration management
 ├── 🌐 health_server.py           # Render deployment health check
-├── 📦 requirements.txt           # Python dependencies
+├── 📦 pyproject.toml             # Python dependencies and project config
+├── 🔒 uv.lock                    # Locked dependency versions
 ├── 🚀 render.yaml               # Render deployment configuration
 ├── 📋 .env.template              # Configuration template
 │
